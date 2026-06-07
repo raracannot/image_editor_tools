@@ -9,12 +9,12 @@ type = "add-on"
 website = "https://github.com/raracannot/image_editor_tools"
 copyright = ["2024-2026 RARA"]
 license = ["GPL-3.0-or-later"]
-tags = ["image", "paint", "uv"]
+tags = ["Paint", "UV", "User Interface"]
 
 [requirements]
 platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64"]
 blender_version_min = "4.2.0"
 
 [permissions]
-files = ["select"]
-network = []
+files = true
+network = false
