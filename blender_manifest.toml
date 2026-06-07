@@ -16,5 +16,5 @@ platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64"]
 blender_version_min = "4.2.0"
 
 [permissions]
-files = true
+files = false
 network = false
