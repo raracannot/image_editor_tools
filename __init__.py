@@ -1,0 +1,223 @@
+
+bl_info = {
+    "name": "图像编辑工具集",
+    "author": "RARA",
+    "version": (0, 2, 0),
+    "blender": (4, 2, 0),
+    "location": "图像编辑器 > N面板 > 测试",
+    "description": "基于代理图预览机制的图像编辑工具集",
+    "category": "Image",
+}
+
+import bpy
+import traceback
+from . import warp
+from . import state
+from . import translation
+from .tools import TOOLS, operator_classes, PreviewEngine
+
+
+class IMAGEEDITOR_TOOLS_PG_Properties(bpy.types.PropertyGroup):
+    ui_color: bpy.props.BoolProperty(default=True)
+    ui_filter: bpy.props.BoolProperty(default=True)
+    ui_texture: bpy.props.BoolProperty(default=True)
+    ui_warp: bpy.props.BoolProperty(default=True)
+
+
+class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
+    bl_label = "图像编辑工具集"
+    bl_idname = "IMAGEEDITOR_TOOLS_PT_MainPanel"
+    bl_space_type = 'IMAGE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "工具"
+
+    @classmethod
+    def poll(cls, context):
+        return (
+            context.space_data.image is not None
+            and state.current_tool == 'NONE'
+        )
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.image_editor_tools
+
+        # ── 色调调整 ──
+        box = layout.box()
+        row = box.row(align=True)
+        row.prop(props, "ui_color", text="色调调整", icon='TRIA_DOWN' if props.ui_color else 'TRIA_RIGHT', emboss=False)
+        if props.ui_color:
+            col = box.column(align=True)
+            op = col.operator("image_editor_tools.tool_start", text="基础调色器", icon='COLOR')
+            op.tool_id = 'color'
+            op = col.operator("image_editor_tools.tool_start", text="通道混合器", icon='COLOR')
+            op.tool_id = 'channel_mixer'
+            op = col.operator("image_editor_tools.tool_start", text="颜色混色器", icon='COLOR')
+            op.tool_id = 'mixer'
+            op = col.operator("image_editor_tools.tool_start", text="色阶", icon='CON_ACTION')
+            op.tool_id = 'levels'
+            op = col.operator("image_editor_tools.tool_start", text="色彩迁徙", icon='COLOR')
+            op.tool_id = 'color_transfer'
+            op = col.operator("image_editor_tools.tool_start", text="色调分离", icon='MOD_MASK')
+            op.tool_id = 'posterize'
+            op = col.operator("image_editor_tools.tool_start", text="色深优化", icon='RENDER_RESULT')
+            op.tool_id = 'depth'
+            op = col.operator("image_editor_tools.tool_start", text="反相", icon='IMAGE_RGB')
+            op.tool_id = 'invert'
+
+        # ── 滤镜效果 ──
+        box = layout.box()
+        row = box.row(align=True)
+        row.prop(props, "ui_filter", text="滤镜效果", icon='TRIA_DOWN' if props.ui_filter else 'TRIA_RIGHT', emboss=False)
+        if props.ui_filter:
+            col = box.column(align=True)
+            op = col.operator("image_editor_tools.tool_start", text="模糊", icon='MATSHADERBALL')
+            op.tool_id = 'blur'
+            op = col.operator("image_editor_tools.tool_start", text="方向模糊", icon='MOD_UVPROJECT')
+            op.tool_id = 'blur'
+            op = col.operator("image_editor_tools.tool_start", text="高反差保留", icon='MOD_DISPLACE')
+            op.tool_id = 'high_pass'
+            op = col.operator("image_editor_tools.tool_start", text="USM锐化", icon='OUTLINER_OB_LIGHTPROBE')
+            op.tool_id = 'sharpen'
+            op = col.operator("image_editor_tools.tool_start", text="噪点", icon='MOD_PARTICLES')
+            op.tool_id = 'noise'
+            op = col.operator("image_editor_tools.tool_start", text="边缘检测", icon='OUTLINER_OB_LIGHTPROBE')
+            op.tool_id = 'edge_detect'
+            op = col.operator("image_editor_tools.tool_start", text="位移", icon='MOD_UVPROJECT')
+            op.tool_id = 'offset'
+            op = col.operator("image_editor_tools.tool_start", text="马赛克", icon='MESH_GRID')
+            op.tool_id = 'mosaic'
+            op = col.operator("image_editor_tools.tool_start", text="晶格化", icon='OUTLINER_OB_POINTCLOUD')
+            op.tool_id = 'crystallize'
+            op = col.operator("image_editor_tools.tool_start", text="浮雕", icon='MOD_BUILD')
+            op.tool_id = 'emboss'
+            op = col.operator("image_editor_tools.tool_start", text="减少杂色", icon='MOD_SOFT')
+            op.tool_id = 'denoise'
+            op = col.operator("image_editor_tools.tool_start", text="色彩半调", icon='SHADING_SOLID')
+            op.tool_id = 'halftone'
+
+        # ── 贴图处理 ──
+        box = layout.box()
+        row = box.row(align=True)
+        row.prop(props, "ui_texture", text="贴图处理", icon='TRIA_DOWN' if props.ui_texture else 'TRIA_RIGHT', emboss=False)
+        if props.ui_texture:
+            col = box.column(align=True)
+            op = col.operator("image_editor_tools.tool_start", text="法线生成", icon='NORMALS_FACE')
+            op.tool_id = 'normal'
+            op = col.operator("image_editor_tools.tool_start", text="法线还原高度", icon='MESH_GRID')
+            op.tool_id = 'height_from_normal'
+
+            op = col.operator("image_editor_tools.tool_start", text="贴图无缝化", icon='MOD_TRIANGULATE')
+            op.tool_id = 'seamless'
+            op = col.operator("image_editor_tools.tool_start", text="黑底抠图", icon='IMAGE_ALPHA')
+            op.tool_id = 'rebuild_alpha'
+            op = col.operator("image_editor_tools.tool_start", text="图像合成", icon='NODE_COMPOSITING')
+            op.tool_id = 'composite'            
+
+
+        # ── 几何变形 ──
+        box = layout.box()
+        row = box.row(align=True)
+        row.prop(props, "ui_warp", text="几何变形", icon='TRIA_DOWN' if props.ui_warp else 'TRIA_RIGHT', emboss=False)
+        if props.ui_warp:
+            col = box.column(align=True)
+            op = col.operator("image_editor_tools.mesh_warp_modal", text="贝塞尔扭曲", icon='MOD_LATTICE')
+            op = col.operator("image_editor_tools.perspective_warp_modal", text="透视形变", icon='MESH_GRID')
+            op = col.operator("image_editor_tools.free_crop_modal", text="自由裁切", icon='BORDERMOVE')
+
+
+class IMAGEEDITOR_TOOLS_PT_ToolPanel(bpy.types.Panel):
+    bl_label = "工具面板"
+    bl_idname = "IMAGEEDITOR_TOOLS_PT_ToolPanel"
+    bl_space_type = 'IMAGE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "工具"
+
+    @classmethod
+    def poll(cls, context):
+        return (
+            context.space_data.image is not None
+            and state.current_tool != 'NONE'
+        )
+
+    def draw_header(self, context):
+        tool = TOOLS.get(state.current_tool)
+        if tool:
+            self.layout.label(text=tool.label)
+        elif state.current_tool.startswith('warp:'):
+            self.layout.label(text=state.current_tool[5:], icon='MOD_LATTICE')
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.image_editor_tools
+        if state.current_tool.startswith('warp:'):
+            row = layout.row(align=True)
+            row.operator("image_editor_tools.warp_cancel", text="取消", icon='X')
+            row.operator("image_editor_tools.warp_apply", text="应用", icon='CHECKMARK')
+            row.operator("image_editor_tools.warp_save_as", text="另存", icon='DUPLICATE')
+            return
+        tool = TOOLS.get(state.current_tool)
+        if tool is None:
+            return
+        tool.draw_panel(layout, props)
+        layout.separator()
+        row = layout.row(align=True)
+        row.operator("image_editor_tools.tool_cancel", text="取消", icon='X')
+        row.operator("image_editor_tools.tool_save", text="保存", icon='CHECKMARK')
+        row.operator("image_editor_tools.tool_save_as", text="另存", icon='DUPLICATE')
+
+
+classes = [
+    IMAGEEDITOR_TOOLS_PG_Properties,
+    IMAGEEDITOR_TOOLS_PT_MainPanel,
+    IMAGEEDITOR_TOOLS_PT_ToolPanel,
+] + operator_classes
+
+
+def register():
+    try:
+        translation.register()
+        state.current_tool = 'NONE'
+        for tool_id, tool_cls in TOOLS.items():
+            for name, prop in tool_cls.get_properties().items():
+                IMAGEEDITOR_TOOLS_PG_Properties.__annotations__[name] = prop
+        for cls in classes:
+            bpy.utils.register_class(cls)
+        bpy.types.Scene.image_editor_tools = bpy.props.PointerProperty(
+            type=IMAGEEDITOR_TOOLS_PG_Properties
+        )
+        warp.register()
+    except Exception:
+        traceback.print_exc()
+        raise
+
+
+def unregister():
+    state.current_tool = 'NONE'
+    try:
+        translation.unregister()
+    except Exception:
+        pass
+    try:
+        warp.unregister()
+    except Exception:
+        pass
+    try:
+        engine = PreviewEngine._active_instance
+        if engine is not None:
+            engine.cleanup()
+    except Exception:
+        pass
+    try:
+        del bpy.types.Scene.image_editor_tools
+    except AttributeError:
+        pass
+    for cls in reversed(classes):
+        try:
+            bpy.utils.unregister_class(cls)
+        except Exception:
+            pass
+
+
+if __name__ == "__main__":
+    register()
