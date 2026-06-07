@@ -1,0 +1,7 @@
+# Blender addon: handle .py as LF, .blend as binary
+*.py text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.blend binary
+*.zip binary

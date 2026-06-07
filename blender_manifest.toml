@@ -1,0 +1,20 @@
+schema_version = "1.1.0"
+
+[id]
+name = "image_editor_tools"
+version = "0.2.0"
+tagline = "基于代理图预览机制的图像编辑工具集"
+maintainer = "RARA"
+type = "add-on"
+website = "https://github.com/raracannot/image_editor_tools"
+copyright = ["2024-2026 RARA"]
+license = ["GPL-3.0-or-later"]
+tags = ["image", "paint", "uv"]
+
+[requirements]
+platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64"]
+blender_version_min = "4.2.0"
+
+[permissions]
+files = ["select"]
+network = []
