@@ -1,11 +1,12 @@
+# image_editor_master
 
 bl_info = {
-    "name": "图像编辑工具集",
+    "name": "Image Editor Master [图像超级工具]",
     "author": "RARA",
-    "version": (0, 2, 0),
+    "version": (0, 3, 0),
     "blender": (4, 2, 0),
-    "location": "图像编辑器 > N面板 > 测试",
-    "description": "基于代理图预览机制的图像编辑工具集",
+    "location": "Image Editor > Sidebar(N-Panel) > Tool",
+    "description": "Super Image Toolbox (color, filters, texture optimization)",
     "category": "Image",
 }
 
@@ -29,7 +30,7 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
     bl_idname = "IMAGEEDITOR_TOOLS_PT_MainPanel"
     bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
-    bl_category = "工具"
+    bl_category = "Tool"
 
     @classmethod
     def poll(cls, context):

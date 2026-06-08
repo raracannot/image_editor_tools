@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.0] - 2026-06-08
+
+### Changed
+- 修复了错误的blender_manifest.toml
+
 ## [0.2.0] - 2026-06-07
 
 ### Added

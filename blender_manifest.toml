@@ -1,19 +1,13 @@
-schema_version = "1.1.0"
-
+schema_version = "1.0.0"
+blender_version_min = "4.2.0"
+version = "0.3.0"
 id = "image_editor_tools"
-version = "0.2.0"
-tagline = "基于代理图预览机制的图像编辑工具集"
+name = "Image Editor Master [图像超级工具]"
+tagline = "Super Image Toolbox (color, filters, texture optimization)"
+license = ["SPDX:GPL-3.0-or-later"]
 maintainer = "RARA"
 type = "add-on"
-website = "https://github.com/raracannot/image_editor_tools"
-copyright = ["2024-2026 RARA"]
-license = ["GPL-3.0-or-later"]
-tags = ["Paint", "UV", "User Interface"]
-
-[requirements]
-platforms = ["windows-x64", "macos-arm64", "macos-x64", "linux-x64"]
-blender_version_min = "4.2.0"
-
-[permissions]
-files = false
-network = false
+website = "https://space.bilibili.com/27284213"
+copyright = ["2026 RARA"]
+tags = ["Object", "3D View", "Scene"]
+platforms = ["windows-arm64", "windows-x64"]
