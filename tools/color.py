@@ -1,6 +1,6 @@
-import bpy
+﻿import bpy
 import numpy as np
-from ..np_img_utils import np_rgb_to_hsv, np_hsv_to_rgb
+from ..utils.np_img_utils import np_rgb_to_hsv, np_hsv_to_rgb
 from .base import BaseTool
 from . import _on_param_update
 

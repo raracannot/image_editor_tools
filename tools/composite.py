@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -134,7 +134,7 @@ class CompositeTool(BaseTool):
         bg_a = np_array[:, :, 3]
 
         if CompositeTool._cache_key != cache_key or CompositeTool._cache_composited is None:
-            from ..np_img_utils import blimg_2_npimg, np_resize_img
+            from ..utils.np_img_utils import blimg_2_npimg, np_resize_img
             fg_np = blimg_2_npimg(fg_img)
             fh, fw = fg_np.shape[:2]
             if fh != h or fw != w:

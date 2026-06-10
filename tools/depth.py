@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -44,7 +44,7 @@ class DepthTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_deband, np_dither_tpdf
+        from ..utils.np_img_utils import np_deband, np_dither_tpdf
         if props.depth_mode == 'DEBAND':
             return np_deband(np_array, props.depth_bits).astype(np.float32, copy=False)
         return np_dither_tpdf(np_array, props.depth_bits).astype(np.float32, copy=False)

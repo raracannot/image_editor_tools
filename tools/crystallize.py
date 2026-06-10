@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -36,7 +36,7 @@ class CrystallizeTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_voronoi_crystallize_spatial, np_resize_img
+        from ..utils.np_img_utils import np_voronoi_crystallize_spatial, np_resize_img
         if props.crystallize_fast:
             h, w = np_array.shape[:2]
             hw, hh = max(1, w // 2), max(1, h // 2)

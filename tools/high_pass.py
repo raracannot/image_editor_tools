@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -40,5 +40,5 @@ class HighPassTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_high_pass
+        from ..utils.np_img_utils import np_high_pass
         return np_high_pass(np_array, props.high_pass_sigma, props.high_pass_contrast)

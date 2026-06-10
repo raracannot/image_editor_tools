@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -81,8 +81,8 @@ class BlurTool(BaseTool):
 
     @staticmethod
     def _process_normal(np_array, props):
-        from ..np_img_utils import np_blur_img, np_gaussian_filter
-        from ..np_img_utils import np_stacked_box_blur, np_kawase_blur, np_directional_blur
+        from ..utils.np_img_utils import np_blur_img, np_gaussian_filter
+        from ..utils.np_img_utils import np_stacked_box_blur, np_kawase_blur, np_directional_blur
         mode = props.blur_mode
         if mode == 'BOX':
             return np_blur_img(np_array, props.blur_radius, props.blur_border_mode)
@@ -99,8 +99,8 @@ class BlurTool(BaseTool):
 
     @staticmethod
     def _process_fast(np_array, props):
-        from ..np_img_utils import np_resize_img, np_blur_img, np_gaussian_filter
-        from ..np_img_utils import np_stacked_box_blur, np_kawase_blur, np_directional_blur
+        from ..utils.np_img_utils import np_resize_img, np_blur_img, np_gaussian_filter
+        from ..utils.np_img_utils import np_stacked_box_blur, np_kawase_blur, np_directional_blur
         h, w = np_array.shape[:2]
         half_w, half_h = max(1, w // 2), max(1, h // 2)
         small = np_resize_img(np_array, half_w, half_h)

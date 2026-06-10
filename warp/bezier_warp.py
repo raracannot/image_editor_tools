@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import gpu
 import blf
 import math
@@ -205,7 +205,7 @@ class MeshWarpEngine(BaseEngine):
 
     def save_as_copy(self):
         try:
-            from ..np_img_utils import npimg_2_blimg
+            from ..utils.np_img_utils import npimg_2_blimg
             img_w, img_h = self.original_image.size
             offscreen = gpu.types.GPUOffScreen(img_w, img_h)
             with offscreen.bind():
@@ -233,7 +233,7 @@ class MeshWarpEngine(BaseEngine):
             pixel_data = np.array(buffer.to_list(), dtype=np.float32).ravel()
             result = pixel_data.reshape(img_h, img_w, 4)
             if not state._HAS_SRGB_SHADER:
-                from ..np_img_utils import np_linear_to_srgb
+                from ..utils.np_img_utils import np_linear_to_srgb
                 result = np_linear_to_srgb(result)
             new_name = self.original_image.name + "_warped"
             npimg_2_blimg(result, new_name, True)
@@ -302,7 +302,7 @@ class MeshWarpEngine(BaseEngine):
             pixel_data = np.array(buffer.to_list(), dtype=np.float32).ravel()
             result = pixel_data.reshape(img_h, img_w, 4)
             if not state._HAS_SRGB_SHADER:
-                from ..np_img_utils import np_linear_to_srgb
+                from ..utils.np_img_utils import np_linear_to_srgb
                 result = np_linear_to_srgb(result)
             self.original_image.pixels.foreach_set(result.ravel())
             self.original_image.update()

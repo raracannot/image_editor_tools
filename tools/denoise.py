@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -45,7 +45,7 @@ class DenoiseTool(BaseTool):
         if strength <= 0.0:
             return np_array
 
-        from ..np_img_utils import np_gaussian_filter, np_rgb_to_gray, np_sobel_edge
+        from ..utils.np_img_utils import np_gaussian_filter, np_rgb_to_gray, np_sobel_edge
 
         sigma = strength * 0.8
         alpha = np_array[:, :, 3]

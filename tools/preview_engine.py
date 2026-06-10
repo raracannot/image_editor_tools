@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import gpu
 import blf
 import time
@@ -7,7 +7,7 @@ from gpu_extras.batch import batch_for_shader
 from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
-from ..np_img_utils import blimg_2_npimg, npimg_2_blimg, np_clamp_image_size
+from ..utils.np_img_utils import blimg_2_npimg, npimg_2_blimg, np_clamp_image_size
 
 PREVIEW_MAX_SIDE = 1024
 TEMP_IMAGE_NAME = "._tool_preview_temp"

@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 
@@ -17,7 +17,7 @@ class EdgeDetectTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_rgb_to_gray, np_sobel_edge
+        from ..utils.np_img_utils import np_rgb_to_gray, np_sobel_edge
         gray = np_rgb_to_gray(np_array)
         edge = np_sobel_edge(gray)
         result = np.zeros_like(np_array)

@@ -1,4 +1,4 @@
-from .base import BaseTool
+﻿from .base import BaseTool
 
 
 class RebuildAlphaTool(BaseTool):
@@ -15,5 +15,5 @@ class RebuildAlphaTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_rebuild_alpha
+        from ..utils.np_img_utils import np_rebuild_alpha
         return np_rebuild_alpha(np_array)

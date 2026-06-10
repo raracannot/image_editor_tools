@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -40,5 +40,5 @@ class SharpenTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_unsharp_mask
+        from ..utils.np_img_utils import np_unsharp_mask
         return np_unsharp_mask(np_array, props.sharpen_sigma, props.sharpen_amount).astype(np.float32, copy=False)

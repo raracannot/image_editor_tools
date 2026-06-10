@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -36,5 +36,5 @@ class NormalTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_height_to_normal
+        from ..utils.np_img_utils import np_height_to_normal
         return np_height_to_normal(np_array, props.normal_strength, props.normal_invert)

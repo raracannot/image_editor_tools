@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import gpu
 import blf
 import math
@@ -7,7 +7,7 @@ from gpu_extras.batch import batch_for_shader
 from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
-from ..np_img_utils import blimg_2_npimg
+from ..utils.np_img_utils import blimg_2_npimg
 
 # ==========================================
 # 核心处理逻辑 (纯 Numpy 单应性矩阵求解)
@@ -323,7 +323,7 @@ class PerspectiveEngine(BaseEngine):
 
     def save_as_copy(self):
         try:
-            from ..np_img_utils import npimg_2_blimg
+            from ..utils.np_img_utils import npimg_2_blimg
             full_np = blimg_2_npimg(self.original_image)
             result = PerspectiveTool.process_full_homography(
                 full_np, self.quad_src, self.quad_tgt, self.padding_mode

@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -53,7 +53,7 @@ class OffsetTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_offset
+        from ..utils.np_img_utils import np_offset
         h, w = np_array.shape[:2]
         dx = int(round(w * props.offset_h_factor))
         dy = int(round(h * props.offset_v_factor))

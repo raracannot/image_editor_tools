@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 
@@ -17,7 +17,7 @@ class HeightFromNormalTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_normal_to_height_fft
+        from ..utils.np_img_utils import np_normal_to_height_fft
         rgb = np_array[:, :, :3]
         alpha = np_array[:, :, 3].copy()
         height = np_normal_to_height_fft(rgb)

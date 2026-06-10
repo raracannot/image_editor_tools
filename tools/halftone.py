@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -59,7 +59,7 @@ class HalftoneTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_rgb_to_gray
+        from ..utils.np_img_utils import np_rgb_to_gray
 
         h, w = np_array.shape[:2]
         gray = np_rgb_to_gray(np_array)

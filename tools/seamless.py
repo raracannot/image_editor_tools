@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -67,7 +67,7 @@ class SeamlessTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_make_seamless_tile, np_make_texture_seamless, np_resize_img
+        from ..utils.np_img_utils import np_make_seamless_tile, np_make_texture_seamless, np_resize_img
         if props.seamless_method == 'BASIC':
             return np_make_seamless_tile(np_array, props.seamless_blend_ratio)
         result = np_make_texture_seamless(np_array, props.seamless_overlap, props.seamless_beta)

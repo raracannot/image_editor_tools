@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -29,7 +29,7 @@ class PosterizeTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_posterize
+        from ..utils.np_img_utils import np_posterize
         rgb = np_posterize(np_array[:, :, :3], props.posterize_levels)
         result = np.zeros_like(np_array)
         result[:, :, :3] = rgb

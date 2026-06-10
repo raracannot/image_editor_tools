@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -41,7 +41,7 @@ class NoiseTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..np_img_utils import np_add_gaussian_noise, np_add_salt_pepper_noise
+        from ..utils.np_img_utils import np_add_gaussian_noise, np_add_salt_pepper_noise
         if props.noise_type == 'GAUSSIAN':
             return np_add_gaussian_noise(np_array, 0.0, props.noise_intensity).astype(np.float32, copy=False)
         return np_add_salt_pepper_noise(np_array, props.noise_intensity).astype(np.float32, copy=False)

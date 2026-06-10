@@ -1,4 +1,4 @@
-import bpy
+﻿import bpy
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
@@ -64,7 +64,7 @@ class ColorTransferTool(BaseTool):
         cache_key = (ref_key, np_key)
 
         if ColorTransferTool._cache_key != cache_key or ColorTransferTool._cache_transferred is None:
-            from ..np_img_utils import (
+            from ..utils.np_img_utils import (
                 blimg_2_npimg,
                 np_resize_img,
                 np_reinhard_color_transfer,
