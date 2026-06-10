@@ -29,27 +29,7 @@ import bpy
 import numpy as np
 import math
 import os
-import atexit
-import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import OpenImageIO as oiio
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 共享全局资源
-# ══════════════════════════════════════════════════════════════════════════════
-
-# 全局线程池：复用避免重复创建销毁的开销。
-# max_workers=4 是经验值，numpy 多线程操作受 GIL 释放机制限制，
-# 实际并行度受 CPU 核心数和内存带宽共同影响，4 线程为甜点值。
-global_executor = ThreadPoolExecutor(max_workers=4)
-
-# 注册退出清理：确保 Blender 关闭或插件重载时线程池优雅关闭。
-atexit.register(global_executor.shutdown, wait=False)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 格式转换工具：float32 [0,1] ↔ uint8 [0,255]
 # 本库所有计算函数只接受/返回 float32 [0,1]，
 # uint8 用户通过这两个函数显式转换：
 # ══════════════════════════════════════════════════════════════════════════════
@@ -381,18 +361,13 @@ def np_blur_img(
     if radius == 0:
         return image_array.copy()
 
-    # 多通道并行模糊：每个通道独立送入线程池
+    # 通道顺序处理
     blurred_img = np.zeros_like(img)
-    future_to_channel = {
-        global_executor.submit(_process_single_channel, img[..., c], radius, mode): c
-        for c in range(C)
-    }
-    for future in as_completed(future_to_channel):
-        channel_idx = future_to_channel[future]
+    for c in range(C):
         try:
-            blurred_img[..., channel_idx] = future.result()
+            blurred_img[..., c] = _process_single_channel(img[..., c], radius, mode)
         except Exception as e:
-            print(f"通道{channel_idx}计算失败：{str(e)}")
+            print(f"通道{c}计算失败：{str(e)}")
             raise e
 
     if is_single_channel:
@@ -491,11 +466,9 @@ def np_directional_blur(image_array: np.ndarray, angle_deg: float = 0.0,
         return r
 
     C = img.shape[-1]
-    futures = {global_executor.submit(_blur_channel, img[..., c]): c for c in range(C)}
     result = np.empty_like(img)
-    for f in as_completed(futures):
-        c = futures[f]
-        result[..., c] = f.result()
+    for c in range(C):
+        result[..., c] = _blur_channel(img[..., c])
     return result
 
 
@@ -1943,14 +1916,11 @@ def np_voronoi_crystallize_spatial(img: np.ndarray, num_cells: int) -> np.ndarra
 
     num_strips = min(4, grid_h)
     strip_size = (grid_h + num_strips - 1) // num_strips
-    futures = []
     for t in range(num_strips):
         y0 = t * strip_size
         y1 = min(y0 + strip_size, grid_h)
         if y0 < y1:
-            futures.append(global_executor.submit(_process_rows, y0, y1))
-    for f in as_completed(futures):
-        f.result()
+            _process_rows(y0, y1)
 
     result = np.empty_like(img)
     for c in range(img.shape[-1]):
