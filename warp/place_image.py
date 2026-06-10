@@ -265,13 +265,26 @@ class PlaceImageEngine(BaseEngine):
         rmx = cx + rdx * ca - rdy * sa
         rmy = cy + rdx * sa + rdy * ca
 
+        _, _, disp_w, disp_h = self._img_rect
+        fw, fh = (1, 1)
+        if self.fg_image is not None:
+            fw, fh = self.fg_image.size
+        if fw <= 0 or fh <= 0:
+            fw, fh = self.original_image.size
+        ratio = fw / max(fh, 1)
+        disp_ratio = disp_w / max(disp_h, 1)
+        if ratio >= disp_ratio:
+            sx = self.scale * disp_w
+            sy = sx / ratio
+        else:
+            sy = self.scale * disp_h
+            sx = sy * ratio
+        uhw = sx / 2.0
+        uhh = sy / 2.0
+
         margin = 10
-        p0x, p0y = p0
-        p2x, p2y = p2
-        hw = (p2x - p0x) / 2.0
-        hh = (p2y - p0y) / 2.0
-        l, r = cx - hw, cx + hw
-        b, t = cy - hh, cy + hh
+        l, r = cx - uhw, cx + uhw
+        b, t = cy - uhh, cy + uhh
 
         if margin < rmx < r - margin and margin < rmy < t - margin:
             return 'MOVE'
