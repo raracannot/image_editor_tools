@@ -245,6 +245,9 @@ class PlaceImageEngine(BaseEngine):
     def handle_mouse_release(self, event):
         self._drag_mode = 'NONE'
 
+    def _corner_hit_radius(self):
+        return 15
+
     def _get_hit_zone(self, mx, my):
         quad = self._get_quad_verts()
         if len(quad) < 4:
@@ -257,51 +260,28 @@ class PlaceImageEngine(BaseEngine):
         top_y = min(p0[1], p1[1], p2[1], p3[1])
 
         rot_pt = (cx, top_y - 25)
-        if math.hypot(mx - rot_pt[0], my - rot_pt[1]) < 15:
+        if math.hypot(mx - rot_pt[0], my - rot_pt[1]) < 12:
             return 'ROTATE'
 
-        ca, sa = math.cos(-self.rotation), math.sin(-self.rotation)
-        rdx, rdy = mx - cx, my - cy
-        rmx = cx + rdx * ca - rdy * sa
-        rmy = cy + rdx * sa + rdy * ca
+        cr = self._corner_hit_radius()
+        for corner in quad:
+            if math.hypot(mx - corner[0], my - corner[1]) < cr:
+                return 'SCALE'
 
-        _, _, disp_w, disp_h = self._img_rect
-        fw, fh = (1, 1)
-        if self.fg_image is not None:
-            fw, fh = self.fg_image.size
-        if fw <= 0 or fh <= 0:
-            fw, fh = self.original_image.size
-        ratio = fw / max(fh, 1)
-        disp_ratio = disp_w / max(disp_h, 1)
-        if ratio >= disp_ratio:
-            sx = self.scale * disp_w
-            sy = sx / ratio
-        else:
-            sy = self.scale * disp_h
-            sx = sy * ratio
-        uhw = sx / 2.0
-        uhh = sy / 2.0
-
-        margin = 10
-        l, r = cx - uhw, cx + uhw
-        b, t = cy - uhh, cy + uhh
-
-        if margin < rmx < r - margin and margin < rmy < t - margin:
+        if self._point_in_quad(mx, my, quad):
             return 'MOVE'
 
-        at_corner = (
-            math.hypot(rmx - l, rmy - b) < 15 or
-            math.hypot(rmx - r, rmy - b) < 15 or
-            math.hypot(rmx - r, rmy - t) < 15 or
-            math.hypot(rmx - l, rmy - t) < 15
-        )
-        if at_corner:
-            return 'SCALE'
-
-        if l - margin < rmx < r + margin and b - margin < rmy < t + margin:
-            return 'SCALE'
-
         return 'NONE'
+
+    def _point_in_quad(self, mx, my, quad):
+        p0, p1, p2, p3 = quad
+        return self._cross(mx, my, p0, p1) >= 0 and \
+               self._cross(mx, my, p1, p2) >= 0 and \
+               self._cross(mx, my, p2, p3) >= 0 and \
+               self._cross(mx, my, p3, p0) >= 0
+
+    def _cross(self, px, py, a, b):
+        return (b[0] - a[0]) * (py - a[1]) - (b[1] - a[1]) * (px - a[0])
 
     def apply_to_original(self):
         try:
