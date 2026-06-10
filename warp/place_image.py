@@ -92,8 +92,21 @@ class PlaceImageEngine(BaseEngine):
             return [(0, 0)] * 4
 
         img_w, img_h = self.original_image.size
-        sx = self.scale * disp_w
-        sy = self.scale * disp_h
+        fw, fh = (img_w, img_h)
+        if self.fg_image is not None:
+            fw, fh = self.fg_image.size
+        if fw <= 0 or fh <= 0:
+            fw, fh = img_w, img_h
+
+        ratio = fw / max(fh, 1)
+        disp_ratio = disp_w / max(disp_h, 1)
+
+        if ratio >= disp_ratio:
+            sx = self.scale * disp_w
+            sy = sx / ratio
+        else:
+            sy = self.scale * disp_h
+            sx = sy * ratio
 
         cx = offset_x + self.offset_x / img_w * disp_w
         cy = offset_y + self.offset_y / img_h * disp_h
@@ -231,29 +244,30 @@ class PlaceImageEngine(BaseEngine):
         self._drag_mode = 'NONE'
 
     def _get_hit_zone(self, mx, my):
-        ox, oy, dw, dh = self._img_rect
-        img_w, img_h = self.original_image.size
-
-        if dw <= 0 or dh <= 0:
+        quad = self._get_quad_verts()
+        if len(quad) < 4:
             return 'NONE'
 
-        cx = ox + self.offset_x / img_w * dw
-        cy = oy + self.offset_y / img_h * dh
-        hw = self.scale * dw / 2.0
-        hh = self.scale * dh / 2.0
+        p0, p1, p2, p3 = quad
+
+        cx = (p0[0] + p1[0] + p2[0] + p3[0]) / 4.0
+        cy = (p0[1] + p1[1] + p2[1] + p3[1]) / 4.0
+        top_y = min(p0[1], p1[1], p2[1], p3[1])
+
+        rot_pt = (cx, top_y - 25)
+        if math.hypot(mx - rot_pt[0], my - rot_pt[1]) < 15:
+            return 'ROTATE'
 
         ca, sa = math.cos(-self.rotation), math.sin(-self.rotation)
         rdx, rdy = mx - cx, my - cy
         rmx = cx + rdx * ca - rdy * sa
         rmy = cy + rdx * sa + rdy * ca
 
-        rot_pt_y = cy - hh - 25
-        rot_dx = mx - cx
-        rot_dy = my - rot_pt_y
-        if math.hypot(rot_dx, rot_dy) < 15:
-            return 'ROTATE'
-
         margin = 10
+        p0x, p0y = p0
+        p2x, p2y = p2
+        hw = (p2x - p0x) / 2.0
+        hh = (p2y - p0y) / 2.0
         l, r = cx - hw, cx + hw
         b, t = cy - hh, cy + hh
 
