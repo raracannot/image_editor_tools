@@ -133,6 +133,9 @@ class PlaceImageEngine(BaseEngine):
         x0, y0 = offset_x, offset_y
         x1, y1 = offset_x + disp_w, offset_y + disp_h
 
+        self._load_fg_image()
+        self._ensure_top_tex()
+
         shader = state.get_display_shader()
         shader.bind()
         shader.uniform_sampler("image", self._cached_orig_tex)
@@ -141,9 +144,9 @@ class PlaceImageEngine(BaseEngine):
             "texCoord": [(0, 0), (1, 0), (1, 1), (0, 1)],
         }).draw(shader)
 
-        self._ensure_top_tex()
+        quad = self._get_quad_verts()
+
         if self._fg_tex is not None:
-            quad = self._get_quad_verts()
             gpu.state.blend_set('ALPHA')
             shader.bind()
             shader.uniform_sampler("image", self._fg_tex)
@@ -157,7 +160,6 @@ class PlaceImageEngine(BaseEngine):
         line_shader.bind()
         line_shader.uniform_float("color", (1.0, 1.0, 1.0, 1.0))
 
-        quad = self._get_quad_verts()
         p0, p1, p2, p3 = quad
         lines = [p0, p1, p1, p2, p2, p3, p3, p0]
         batch_for_shader(line_shader, 'LINES', {"pos": lines}).draw(line_shader)
@@ -290,11 +292,11 @@ class PlaceImageEngine(BaseEngine):
 
     def apply_to_original(self):
         try:
-            bg_np = blimg_2_npimg(self.original_image)
+            self._load_fg_image()
             if self.fg_image is None:
                 self.cleanup()
                 return
-
+            bg_np = blimg_2_npimg(self.original_image)
             fg_np = blimg_2_npimg(self.fg_image)
             result = self._composite(bg_np, fg_np)
             self.original_image.pixels.foreach_set(result.ravel())
@@ -306,10 +308,11 @@ class PlaceImageEngine(BaseEngine):
 
     def save_as_copy(self):
         try:
-            bg_np = blimg_2_npimg(self.original_image)
+            self._load_fg_image()
             if self.fg_image is None:
                 self.cleanup()
                 return
+            bg_np = blimg_2_npimg(self.original_image)
             fg_np = blimg_2_npimg(self.fg_image)
             result = self._composite(bg_np, fg_np)
             new_name = self.original_image.name + "_placed"
