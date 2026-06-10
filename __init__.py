@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Image Editor Master [图像超级工具]",
     "author": "RARA",
-    "version": (0, 3, 2),
+    "version": (0, 3, 4),
     "blender": (4, 2, 0),
     "location": "Image Editor > Sidebar(N-Panel) > Tool",
     "description": "Super Image Toolbox (color, filters, texture optimization)",
@@ -23,6 +23,28 @@ class IMAGEEDITOR_TOOLS_PG_Properties(bpy.types.PropertyGroup):
     ui_filter: bpy.props.BoolProperty(default=True)
     ui_texture: bpy.props.BoolProperty(default=True)
     ui_warp: bpy.props.BoolProperty(default=True)
+    place_img_fg: bpy.props.PointerProperty(
+        name="前景图", type=bpy.types.Image,
+        description="用于置入叠加的前景图像",
+    )
+    place_img_mode: bpy.props.EnumProperty(
+        name="混合模式",
+        items=[
+            ('MIX', "正常", ""),
+            ('DARKEN', "变暗", ""), ('MULTIPLY', "正片叠底", ""),
+            ('BURN', "颜色加深", ""), ('LIGHTEN', "变亮", ""),
+            ('SCREEN', "滤色", ""), ('DODGE', "颜色减淡", ""),
+            ('ADD', "线性减淡", ""), ('OVERLAY', "叠加", ""),
+            ('SOFT_LIGHT', "柔光", ""), ('LINEAR_LIGHT', "线性光", ""),
+            ('DIFFERENCE', "差值", ""), ('EXCLUSION', "排除", ""),
+            ('SUBTRACT', "减去", ""), ('DIVIDE', "划分", ""),
+        ],
+        default='MIX',
+    )
+    place_img_opacity: bpy.props.FloatProperty(
+        name="不透明度", default=1.0, min=0.0, max=1.0,
+        soft_min=0.0, soft_max=1.0, subtype='FACTOR',
+    )
 
 
 class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
@@ -74,8 +96,6 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             col = box.column(align=True)
             op = col.operator("image_editor_tools.tool_start", text="模糊", icon='MATSHADERBALL')
             op.tool_id = 'blur'
-            op = col.operator("image_editor_tools.tool_start", text="方向模糊", icon='MOD_UVPROJECT')
-            op.tool_id = 'blur'
             op = col.operator("image_editor_tools.tool_start", text="高反差保留", icon='MOD_DISPLACE')
             op.tool_id = 'high_pass'
             op = col.operator("image_editor_tools.tool_start", text="USM锐化", icon='OUTLINER_OB_LIGHTPROBE')
@@ -125,6 +145,7 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             op = col.operator("image_editor_tools.mesh_warp_modal", text="贝塞尔扭曲", icon='MOD_LATTICE')
             op = col.operator("image_editor_tools.perspective_warp_modal", text="透视形变", icon='MESH_GRID')
             op = col.operator("image_editor_tools.free_crop_modal", text="自由裁切", icon='BORDERMOVE')
+            op = col.operator("image_editor_tools.place_image_modal", text="置入图像", icon='IMAGE_DATA')
 
 
 class IMAGEEDITOR_TOOLS_PT_ToolPanel(bpy.types.Panel):
@@ -152,6 +173,14 @@ class IMAGEEDITOR_TOOLS_PT_ToolPanel(bpy.types.Panel):
         layout = self.layout
         props = context.scene.image_editor_tools
         if state.current_tool.startswith('warp:'):
+            if state.current_tool == 'warp:置入图像':
+                layout.prop(props, "place_img_fg", text="前景图")
+                if props.place_img_fg is not None:
+                    layout.prop(props, "place_img_mode", text="模式")
+                    layout.prop(props, "place_img_opacity", text="不透明度", slider=True)
+                else:
+                    layout.label(text="请选择一幅前景图", icon='INFO')
+                layout.separator()
             row = layout.row(align=True)
             row.operator("image_editor_tools.warp_cancel", text="取消", icon='X')
             row.operator("image_editor_tools.warp_apply", text="应用", icon='CHECKMARK')
