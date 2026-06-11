@@ -45,6 +45,14 @@ class IMAGEEDITOR_TOOLS_PG_Properties(bpy.types.PropertyGroup):
         name="不透明度", default=1.0, min=0.0, max=1.0,
         soft_min=0.0, soft_max=1.0, subtype='FACTOR',
     )
+    slice_cols: bpy.props.IntProperty(
+        name="纵向分割数", default=2, min=0, max=12,
+        description="纵向分割线数量",
+    )
+    slice_rows: bpy.props.IntProperty(
+        name="横向分割数", default=2, min=0, max=12,
+        description="横向分割线数量",
+    )
 
 
 class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
@@ -146,6 +154,7 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             op = col.operator("image_editor_tools.perspective_warp_modal", text="透视形变", icon='MESH_GRID')
             op = col.operator("image_editor_tools.free_crop_modal", text="自由裁切", icon='BORDERMOVE')
             op = col.operator("image_editor_tools.place_image_modal", text="置入图像", icon='IMAGE_DATA')
+            op = col.operator("image_editor_tools.slice_image_modal", text="切分图像", icon='GRID')
 
 
 class IMAGEEDITOR_TOOLS_PT_ToolPanel(bpy.types.Panel):
@@ -183,6 +192,10 @@ class IMAGEEDITOR_TOOLS_PT_ToolPanel(bpy.types.Panel):
                     layout.prop(props, "place_img_opacity", text="不透明度", slider=True)
                 else:
                     layout.label(text="请选择一幅前景图", icon='INFO')
+                layout.separator()
+            elif state.current_tool == 'warp:切分图像':
+                layout.prop(props, "slice_cols", text="纵向")
+                layout.prop(props, "slice_rows", text="横向")
                 layout.separator()
             row = layout.row(align=True)
             row.operator("image_editor_tools.warp_cancel", text="取消", icon='X')
