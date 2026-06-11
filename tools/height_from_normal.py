@@ -12,8 +12,8 @@ class HeightFromNormalTool(BaseTool):
     def get_properties():
         return {
             'hfn_flip_g': bpy.props.BoolProperty(
-                name="DirectX贴图，翻转 G 通道",
-                description="法线格式切换\nOpenGL：C4D、Blender、Maya...\n\nDirectX (Y-)：3ds_Max、UE、SP...\n\n红橙黄绿青蓝紫，顺时针为DirectX，逆时针为OpenGL\n红色在右边为凸法线，红色在左边为凹法线",
+                name="翻转 G 通道",
+                description="OpenGL (Y+) ⇄ DirectX (Y-) 法线格式切换",
                 default=False,
                 update=_on_param_update,
             ),
