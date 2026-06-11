@@ -176,8 +176,8 @@ def _hsl_shift_replace(np_array, target, replace, tolerance, fuzziness, strength
 
     target_hsv = np_rgb_to_hsv(target.reshape(1, 1, 3))
     replace_hsv = np_rgb_to_hsv(replace.reshape(1, 1, 3))
-    t_h, t_s = target_hsv[0, 0, 0], target_hsv[0, 0, 1]
-    r_h, r_s, r_v = replace_hsv[0, 0, 0], replace_hsv[0, 0, 1], replace_hsv[0, 0, 2]
+    t_h, t_s, _ = target_hsv[0][0, 0], target_hsv[1][0, 0], target_hsv[2][0, 0]
+    r_h, r_s, r_v = replace_hsv[0][0, 0], replace_hsv[1][0, 0], replace_hsv[2][0, 0]
 
     dh = abs(h - t_h)
     dh = np.minimum(dh, 1.0 - dh)
