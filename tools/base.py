@@ -17,3 +17,18 @@ class BaseTool:
     @staticmethod
     def process(np_array, props: bpy.types.PropertyGroup):
         raise NotImplementedError
+
+    @staticmethod
+    def on_mouse_press(props, img_rect, mx, my):
+        """返回 drag_state dict 表示已处理，返回 None 表示未处理"""
+        return None
+
+    @staticmethod
+    def on_mouse_move(props, img_rect, mx, my, drag_state):
+        """拖拽中每帧调用，返回 True 表示已处理"""
+        return False
+
+    @staticmethod
+    def on_mouse_release(props):
+        """拖拽结束清理 (可选)"""
+        pass

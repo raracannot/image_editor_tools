@@ -78,3 +78,28 @@ class OffsetTool(BaseTool):
         if dst_x0 < dst_x1 and dst_y0 < dst_y1:
             result[dst_y0:dst_y1, dst_x0:dst_x1] = np_array[src_y0:src_y1, src_x0:src_x1]
         return result
+
+    @staticmethod
+    def on_mouse_press(props, img_rect, mx, my):
+        ox, oy, dw, dh = img_rect
+        if dw <= 0 or dh <= 0:
+            return None
+        if not (ox <= mx <= ox + dw and oy <= my <= oy + dh):
+            return None
+        return {
+            'start_mouse': (mx, my),
+            'start_factor': (props.offset_h_factor, props.offset_v_factor),
+        }
+
+    @staticmethod
+    def on_mouse_move(props, img_rect, mx, my, drag_state):
+        ox, oy, dw, dh = img_rect
+        if dw <= 0 or dh <= 0:
+            return False
+        smx, smy = drag_state['start_mouse']
+        sfx, sfy = drag_state['start_factor']
+        dx = (mx - smx) / dw
+        dy = (my - smy) / dh
+        props.offset_h_factor = max(-1.0, min(1.0, sfx + dx))
+        props.offset_v_factor = max(-1.0, min(1.0, sfy + dy))
+        return True
