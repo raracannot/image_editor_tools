@@ -275,10 +275,7 @@ class MeshWarpEngine(BaseEngine):
 
                 verts = [(pt[0] * img_w, pt[1] * img_h) for pt in self.dense_deformed_np]
 
-                try:
-                    shader = state.get_offscreen_shader()
-                except Exception:
-                    shader = gpu.shader.from_builtin('2D_IMAGE')
+                shader = state.get_display_shader()
 
                 shader.bind()
                 shader.uniform_sampler("image", self._cached_orig_tex)

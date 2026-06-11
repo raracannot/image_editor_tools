@@ -62,6 +62,29 @@ class ColorReplaceTool(BaseTool):
                 name="反转蒙版", default=False,
                 update=_on_param_update,
             ),
+            'crep_lum_min': bpy.props.FloatProperty(
+                name="亮度下限", default=0.0, min=0.0, max=1.0,
+                soft_min=0.0, soft_max=1.0, subtype='FACTOR',
+                update=_on_param_update, description="低于此亮度的像素不替换",
+            ),
+            'crep_lum_max': bpy.props.FloatProperty(
+                name="亮度上限", default=1.0, min=0.0, max=1.0,
+                soft_min=0.0, soft_max=1.0, subtype='FACTOR',
+                update=_on_param_update, description="高于此亮度的像素不替换",
+            ),
+            'crep_sat_min': bpy.props.FloatProperty(
+                name="饱和度下限", default=0.0, min=0.0, max=1.0,
+                soft_min=0.0, soft_max=1.0, subtype='FACTOR',
+                update=_on_param_update, description="低于此饱和度的像素不替换",
+            ),
+            'crep_refine_mask': bpy.props.BoolProperty(
+                name="边缘精炼", default=False,
+                update=_on_param_update, description="对蒙版做 1-2px 模糊消除锯齿",
+            ),
+            'crep_spill_suppress': bpy.props.BoolProperty(
+                name="溢出抑制", default=False,
+                update=_on_param_update, description="过渡区去饱和减少旧色残留",
+            ),
         }
 
     @staticmethod
@@ -74,6 +97,18 @@ class ColorReplaceTool(BaseTool):
         layout.prop(props, "crep_fuzziness", text="羽化", slider=True)
         layout.prop(props, "crep_strength", text="强度", slider=True)
 
+        box = layout.box()
+        box.label(text="亮度/饱和度约束")
+        row = box.row(align=True)
+        row.prop(props, "crep_lum_min", text="亮度", slider=True)
+        row.prop(props, "crep_lum_max", text="", slider=True)
+        box.prop(props, "crep_sat_min", text="饱和度下限", slider=True)
+
+        box = layout.box()
+        box.label(text="精炼")
+        box.prop(props, "crep_refine_mask", text="边缘精炼")
+        box.prop(props, "crep_spill_suppress", text="溢出抑制")
+
         layout.separator()
         row = layout.row(align=True)
         row.prop(props, "crep_mask_img", text="蒙版")
@@ -84,7 +119,7 @@ class ColorReplaceTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        mask = _get_mask(np_array, props)
+        external_mask = _get_mask(np_array, props)
         target = np.asarray(props.crep_target, dtype=np.float32)
         replace = np.asarray(props.crep_replace, dtype=np.float32)
         tol = max(0.001, props.crep_tolerance ** 0.5)
@@ -107,7 +142,19 @@ class ColorReplaceTool(BaseTool):
         else:
             result = _hsl_shift_replace(np_array, target, replace, tol, fuzzy, strength)
 
-        return _blend(np_array, result, mask)
+        lumsat_mask = _build_lumsat_mask(np_array, props.crep_lum_min, props.crep_lum_max, props.crep_sat_min)
+        combined_mask = external_mask * lumsat_mask
+
+        if props.crep_refine_mask:
+            from ..utils.np_img_utils import np_blur_img
+            combined_mask = np_blur_img(combined_mask, 2.0, 'edge')
+
+        result = _blend(np_array, result, combined_mask)
+
+        if props.crep_spill_suppress:
+            result = _spill_suppress(result, combined_mask, replace)
+
+        return result
 
 
 def _get_mask(np_array, props):
@@ -426,6 +473,36 @@ def _hsv_lock_replace(np_array, target, replace, tolerance, fuzziness, strength)
     sm = mask[..., np.newaxis] * strength
     result[:, :, :3] = np.clip(rgb * (1.0 - sm) + result_rgb * sm, 0, 1)
     result[:, :, 3] = alpha_ch
+    return result
+
+
+def _build_lumsat_mask(np_array, lum_min, lum_max, sat_min):
+    if lum_min <= 0.0 and lum_max >= 1.0 and sat_min <= 0.0:
+        return np.ones(np_array.shape[:2], dtype=np.float32)
+
+    rgb = np_array[:, :, :3]
+    lum = rgb[:, :, 0] * 0.299 + rgb[:, :, 1] * 0.587 + rgb[:, :, 2] * 0.114
+    max_c = np.max(rgb, axis=-1)
+    min_c = np.min(rgb, axis=-1)
+    sat = np.where(max_c > 1e-6, (max_c - min_c) / np.maximum(max_c, 1e-10), 0.0)
+
+    mask = np.ones_like(lum, dtype=np.float32)
+    if lum_min > 0.0:
+        mask = np.where(lum < lum_min, 0.0, mask)
+    if lum_max < 1.0:
+        mask = np.where(lum > lum_max, 0.0, mask)
+    if sat_min > 0.0:
+        mask = np.where(sat < sat_min, 0.0, mask)
+    return mask
+
+
+def _spill_suppress(result, mask, replace_rgb):
+    spill = (mask > 0.05) & (mask < 0.5)
+    if not np.any(spill):
+        return result
+
+    fix = result[:, :, :3] * 0.85 + replace_rgb * 0.15
+    result[:, :, :3] = np.where(spill[..., np.newaxis], np.clip(fix, 0.0, 1.0), result[:, :, :3])
     return result
 
 
