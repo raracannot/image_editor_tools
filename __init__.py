@@ -141,7 +141,9 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             op = col.operator("image_editor_tools.tool_start", text="黑底抠图", icon='IMAGE_ALPHA')
             op.tool_id = 'rebuild_alpha'
             op = col.operator("image_editor_tools.tool_start", text="图像合成", icon='NODE_COMPOSITING')
-            op.tool_id = 'composite'            
+            op.tool_id = 'composite'
+            op = col.operator("image_editor_tools.tool_start", text="通道修改", icon='TEXTURE')
+            op.tool_id = 'channel'            
 
 
         # ── 几何变形 ──

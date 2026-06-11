@@ -196,7 +196,9 @@ class PreviewEngine(BaseEngine):
         try:
             props = bpy.context.scene.image_editor_tools
             full_np = blimg_2_npimg(self.original_image)
-            result = self.tool.process(full_np, props)
+            result = self.tool.on_apply(full_np, props, 'original')
+            if result is None:
+                result = self.tool.process(full_np, props)
             self.original_image.pixels.foreach_set(result.ravel())
             self.original_image.update()
         except Exception as e:
@@ -208,7 +210,9 @@ class PreviewEngine(BaseEngine):
         try:
             props = bpy.context.scene.image_editor_tools
             full_np = blimg_2_npimg(self.original_image)
-            result = self.tool.process(full_np, props)
+            result = self.tool.on_apply(full_np, props, 'copy')
+            if result is None:
+                result = self.tool.process(full_np, props)
             new_name = self.original_image.name + "_" + self.tool.tool_id
             new_img = npimg_2_blimg(result, new_name, True)
             bpy.context.space_data.image = new_img

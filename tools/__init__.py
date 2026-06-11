@@ -32,6 +32,7 @@ from .crystallize import CrystallizeTool
 from .invert import InvertTool
 from .levels import LevelsTool
 from .channel_mixer import ChannelMixerTool
+from .channel import ChannelTool
 from .operators import classes as operator_classes
 
 TOOLS = {
@@ -59,4 +60,5 @@ TOOLS = {
     'invert': InvertTool,
     'levels': LevelsTool,
     'channel_mixer': ChannelMixerTool,
+    'channel': ChannelTool,
 }
