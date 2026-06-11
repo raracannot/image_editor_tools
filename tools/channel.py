@@ -59,9 +59,9 @@ class ChannelTool(BaseTool):
 
     @staticmethod
     def draw_panel(layout, props):
-        layout.prop(props, "ch_mode")
+        layout.prop(props, "ch_mode", expand=True)
         if props.ch_mode == 'SPLIT':
-            layout.prop(props, "ch_view", text="预览")
+            layout.prop(props, "ch_view", text="预览", expand=True)
         else:
             for label, img_key, src_key in [
                 ("R 通道", "ch_img_r", "ch_src_r"),
@@ -74,7 +74,8 @@ class ChannelTool(BaseTool):
                 row.prop(props, img_key, text=label)
                 op = row.operator("image_editor_tools.clipboard_paste_to_prop", text="", icon='PASTEDOWN')
                 op.target_prop = img_key
-                box.prop(props, src_key, text="来源")
+                row = box.row(align=True)
+                row.prop(props, src_key, text="来源", expand=True)
 
     @staticmethod
     def process(np_array, props):
@@ -109,37 +110,49 @@ def _merge_preview(np_array, props):
     img_h, img_w = np_array.shape[:2]
     out = np.zeros_like(np_array)
 
+    img_keys = ['ch_img_r', 'ch_img_g', 'ch_img_b', 'ch_img_a']
+    img_map = {}
+    for key in img_keys:
+        img = getattr(props, key)
+        if img is not None:
+            img_map[key] = img
+
+    cache = {}
+    for key, img in img_map.items():
+        sig = (img.name, img.size[0], img.size[1])
+        if sig not in cache:
+            from ..utils.np_img_utils import blimg_2_npimg, np_resize_img
+            arr = blimg_2_npimg(img)
+            sh, sw = arr.shape[:2]
+            if sh != img_h or sw != img_w:
+                arr = np_resize_img(arr, img_w, img_h)
+            cache[sig] = arr
+        else:
+            arr = cache[sig]
+        img_map[key] = arr
+
     for ch_idx, img_key, src_key in [
         (0, 'ch_img_r', 'ch_src_r'),
         (1, 'ch_img_g', 'ch_src_g'),
         (2, 'ch_img_b', 'ch_src_b'),
         (3, 'ch_img_a', 'ch_src_a'),
     ]:
-        src_img = getattr(props, img_key)
         src_mode = getattr(props, src_key)
-        arr = _get_channel_data(np_array, src_img, src_mode, img_w, img_h)
-        out[:, :, ch_idx] = arr if ch_idx < 3 else arr
+        if getattr(props, img_key) is not None:
+            arr = img_map[img_key]
+        else:
+            arr = np_array
+        out[:, :, ch_idx] = _pick_channel(arr, src_mode)
 
-    rgb = out[:, :, :3]
-    has_alpha = (rgb[:, :, 0] != 0) | (rgb[:, :, 1] != 0) | (rgb[:, :, 2] != 0) | (out[:, :, 3] != 0)
+    has_alpha = (out[:, :, 0] != 0) | (out[:, :, 1] != 0) | (out[:, :, 2] != 0) | (out[:, :, 3] != 0)
     out[:, :, 3] = np.where(has_alpha, out[:, :, 3], 1.0)
     return out
 
 
-def _get_channel_data(self_np, src_img, src_mode, target_w, target_h):
-    if src_img is None:
-        arr = self_np
-    else:
-        from ..utils.np_img_utils import blimg_2_npimg, np_resize_img
-        arr = blimg_2_npimg(src_img)
-        sh, sw = arr.shape[:2]
-        if sh != target_h or sw != target_w:
-            arr = np_resize_img(arr, target_w, target_h)
-
+def _pick_channel(arr, src_mode):
     if src_mode == 'RGB':
-        return (arr[:, :, 0] * 0.299 + arr[:, :, 1] * 0.587 + arr[:, :, 2] * 0.114)
-    idx = {'R': 0, 'G': 1, 'B': 2, 'A': 3}[src_mode]
-    return arr[:, :, idx].copy()
+        return arr[:, :, 0] * 0.299 + arr[:, :, 1] * 0.587 + arr[:, :, 2] * 0.114
+    return arr[:, :, {'R': 0, 'G': 1, 'B': 2, 'A': 3}[src_mode]]
 
 
 def _do_split(np_array, props):
