@@ -291,6 +291,7 @@ data = {
     "重复": "Repeat",
     "白底": "White",
     "黑底": "Black",
+    "  (拖拽图像可直接位移)": "  (drag image to offset directly)",
 
     # ====== Dynamic state current_tool labels ======
     "warp:贝塞尔扭曲": "warp:Mesh Warp",

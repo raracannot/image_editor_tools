@@ -26,6 +26,9 @@ class PreviewEngine(BaseEngine):
         self._last_click_time = 0.0
         self._cached_preview_tex = None
         self._cached_preview_image = None
+        self._offset_drag = False
+        self._offset_start_mouse = (0, 0)
+        self._offset_start_factor = (0.0, 0.0)
         super().__init__(context, image)
 
     def _on_init_before_draw(self):
@@ -147,6 +150,8 @@ class PreviewEngine(BaseEngine):
         blf.color(font_id, 0.9, 0.9, 0.9, 1.0)
         mode_texts = ["原图 | 预览图", "预览图 | 原图", "仅原图", "仅预览图"]
         text = pget_tmpl("{mode}(双击切换)", mode=mode_texts[self.display_mode])
+        if self.tool.tool_id == 'offset':
+            text += bpy.app.translations.pgettext("  (拖拽图像可直接位移)")
         text_x = x0
         text_y = y0 - 25
         blf.position(font_id, text_x, text_y, 0)
@@ -164,6 +169,13 @@ class PreviewEngine(BaseEngine):
         if not in_image:
             return False
 
+        if self.tool.tool_id == 'offset':
+            self._offset_drag = True
+            self._offset_start_mouse = (mx, my)
+            props = bpy.context.scene.image_editor_tools
+            self._offset_start_factor = (props.offset_h_factor, props.offset_v_factor)
+            return True
+
         if self.display_mode < 2:
             line_x = ox + self.compare_x * dw
             if abs(mx - line_x) < 24:
@@ -179,6 +191,19 @@ class PreviewEngine(BaseEngine):
         return False
 
     def handle_mouse_move(self, event):
+        if self._offset_drag:
+            ox, oy, dw, dh = self._img_rect
+            if dw <= 0 or dh <= 0:
+                return False
+            mx = event.mouse_region_x
+            my = event.mouse_region_y
+            dx = (mx - self._offset_start_mouse[0]) / dw
+            dy = (my - self._offset_start_mouse[1]) / dh
+            props = bpy.context.scene.image_editor_tools
+            props.offset_h_factor = max(-1.0, min(1.0, self._offset_start_factor[0] + dx))
+            props.offset_v_factor = max(-1.0, min(1.0, self._offset_start_factor[1] + dy))
+            return True
+
         if not self._dragging or self.display_mode >= 2:
             return False
         ox, oy, dw, dh = self._img_rect
@@ -191,6 +216,7 @@ class PreviewEngine(BaseEngine):
 
     def handle_mouse_release(self, event):
         self._dragging = False
+        self._offset_drag = False
 
     def apply_to_original(self):
         try:
