@@ -597,7 +597,7 @@ def np_height_to_normal(
     return np.stack([normal_r, normal_g, normal_b, normal_a], axis=-1).astype(np.float32)
 
 
-def np_normal_to_height_fft(normal_img: np.ndarray) -> np.ndarray:
+def np_normal_to_height_fft(normal_img: np.ndarray, flip_g: bool = False) -> np.ndarray:
     """
     法线贴图 → 高度图（FFT 求解 Poisson 方程）。
     专为【四边连续/无缝】法线贴图设计，使用周期性边界条件。
@@ -607,18 +607,23 @@ def np_normal_to_height_fft(normal_img: np.ndarray) -> np.ndarray:
     2. 计算散度 divergence = ∂(grad_x)/∂x + ∂(grad_y)/∂y
     3. FFT 频域求解 Poisson 方程 ∇²Z = divergence
     4. 逆 FFT 还原高度图并归一化到 [0,1]
-
-    输入：float32 [0,1] 法线贴图 (H,W,3)
-    输出：float32 [0,1] 高度图 (H,W)
+    
+    参数：
+    normal_img : float32 [0,1] 法线贴图 (H,W,3)
+    flip_g     : bool, 是否翻转 G 通道 (默认 False)。
+                 用于在 False/OpenGL (Y+) 和 True/DirectX (Y-) 法线格式之间切换。
+    输出：
+    float32 [0,1] 高度图 (H,W)
     """
     # 解码法线向量：[0,1] → [-1,1]
     nx = normal_img[..., 0].astype(np.float32) * 2.0 - 1.0
     ny = normal_img[..., 1].astype(np.float32) * 2.0 - 1.0
     nz = np.maximum(normal_img[..., 2].astype(np.float32) * 2.0 - 1.0, 1e-6)
-
-    # 从法线恢复梯度场：grad_x = -nx/nz, grad_y = ny/nz
+    if flip_g:
+        ny = -ny
+    # 从法线恢复梯度场：grad_x = -nx/nz, grad_y = -ny/nz
     grad_x = -nx / nz
-    grad_y = ny / nz
+    grad_y = -ny / nz
     grad_x -= np.mean(grad_x)  # 去均值避免 DC 分量累积
     grad_y -= np.mean(grad_y)
 
@@ -647,6 +652,7 @@ def np_normal_to_height_fft(normal_img: np.ndarray) -> np.ndarray:
     # 归一化到 [0, 1]
     h_min, h_max = height_map.min(), height_map.max()
     return (height_map - h_min) / (h_max - h_min + np.float32(1e-6))
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════
