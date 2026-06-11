@@ -8,6 +8,7 @@ from gpu_extras.batch import batch_for_shader
 from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
+from . import WarpModalBase
 
 
 class MeshWarpEngine(BaseEngine):
@@ -315,88 +316,19 @@ class MeshWarpEngine(BaseEngine):
         super().cleanup()
 
 
-class IMAGE_OT_mesh_warp_modal(bpy.types.Operator):
+class IMAGE_OT_mesh_warp_modal(WarpModalBase):
     bl_idname = "image_editor_tools.mesh_warp_modal"
     bl_label = "贝塞尔扭曲"
-    bl_options = {'REGISTER', 'UNDO'}
+    engine_class = MeshWarpEngine
+    tool_key = 'warp:贝塞尔扭曲'
+    tool_label = '贝塞尔扭曲'
+    status_text = "贝塞尔扭曲: 拖拽控制点 | P填色 | F重置 | Enter应用 | Esc取消"
 
-    @classmethod
-    def poll(cls, context):
-        return (
-            context.space_data is not None
-            and context.space_data.type == 'IMAGE_EDITOR'
-            and context.space_data.image is not None
-        )
-
-    def modal(self, context, event):
-        engine = MeshWarpEngine._active_instance
-        if not engine or engine.should_exit:
-            return self._finish(context)
-        context.area.tag_redraw()
-
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
-            engine.cleanup()
-            return self._finish(context)
-        elif event.type in {'RET', 'NUMPAD_ENTER'}:
-            engine.apply_to_original()
-            return self._finish(context)
-
+    def _custom_keys(self, context, event, engine):
         if event.type == 'P' and event.value == 'PRESS':
             engine.cycle_padding_mode()
-            return {'RUNNING_MODAL'}
+            return True
         if event.type == 'F' and event.value == 'PRESS':
             engine.reset_transform()
-            return {'RUNNING_MODAL'}
-
-        if event.type == 'LEFTMOUSE':
-            if event.value == 'PRESS':
-                if engine.handle_mouse_press(event):
-                    return {'RUNNING_MODAL'}
-                return {'PASS_THROUGH'}
-            elif event.value == 'RELEASE':
-                was_dragging = (engine._drag_idx != -1)
-                engine.handle_mouse_release(event)
-                if was_dragging:
-                    return {'RUNNING_MODAL'}
-                return {'PASS_THROUGH'}
-
-        elif event.type == 'MOUSEMOVE':
-            if engine._drag_idx != -1:
-                engine.handle_mouse_move(event)
-                return {'RUNNING_MODAL'}
-
-        return {'PASS_THROUGH'}
-
-    def invoke(self, context, event):
-        if context.space_data.type != 'IMAGE_EDITOR' or not context.space_data.image:
-            self.report({'WARNING'}, "请在图像编辑器中打开一张图片")
-            return {'CANCELLED'}
-        if MeshWarpEngine._active_instance:
-            MeshWarpEngine._active_instance.cleanup()
-
-        self._prev_ui_mode = str(context.space_data.ui_mode)
-        if context.area.ui_type != 'IMAGE_EDITOR':
-            context.area.ui_type = 'IMAGE_EDITOR'
-        context.space_data.ui_mode = 'VIEW'
-
-        bpy.ops.ed.undo_push(message="贝塞尔扭曲")
-        state.current_tool = 'warp:贝塞尔扭曲'
-        MeshWarpEngine(context, context.space_data.image)
-        context.window_manager.modal_handler_add(self)
-        context.workspace.status_text_set("贝塞尔扭曲: 拖拽控制点 | P填色 | F重置 | Enter应用 | Esc取消")
-        return {'RUNNING_MODAL'}
-
-    def _finish(self, context):
-        state.current_tool = 'NONE'
-        prev = getattr(self, '_prev_ui_mode', None)
-        if prev is not None:
-            try:
-                area = context.area
-                if area is not None and area.type == 'IMAGE_EDITOR':
-                    sp = area.spaces.active
-                    if sp is not None:
-                        sp.ui_mode = prev
-            except Exception:
-                pass
-        context.workspace.status_text_set(None)
-        return {'FINISHED'}
+            return True
+        return False

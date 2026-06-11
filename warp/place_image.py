@@ -8,9 +8,9 @@ from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
 from ..utils.np_img_utils import blimg_2_npimg, npimg_2_blimg
+from ..utils.blend_modes import apply_blend_mode
+from . import WarpModalBase
 
-
-_TOP_IMAGE_NAME = "._place_image_top_tex"
 
 BLEND_MODE_ITEMS = [
     ('MIX', "正常", ""), ('DARKEN', "变暗", ""), ('MULTIPLY', "正片叠底", ""),
@@ -20,27 +20,6 @@ BLEND_MODE_ITEMS = [
     ('DIFFERENCE', "差值", ""), ('EXCLUSION', "排除", ""),
     ('SUBTRACT', "减去", ""), ('DIVIDE', "划分", ""),
 ]
-
-
-def _apply_blend_mode(bg, fg, mode):
-    eps = 1e-5
-    B, L = bg, fg
-    if mode == 'MIX':           return L
-    if mode == 'DARKEN':        return np.minimum(B, L)
-    if mode == 'MULTIPLY':      return B * L
-    if mode == 'BURN':          return np.clip(1.0 - (1.0 - B) / (L + eps), 0, 1)
-    if mode == 'LIGHTEN':       return np.maximum(B, L)
-    if mode == 'SCREEN':        return 1.0 - (1.0 - B) * (1.0 - L)
-    if mode == 'DODGE':         return np.clip(B / (1.0 - L + eps), 0, 1)
-    if mode == 'ADD':           return np.clip(B + L, 0, 1)
-    if mode == 'OVERLAY':       return np.where(B < 0.5, 2.0 * B * L, 1.0 - 2.0 * (1.0 - B) * (1.0 - L))
-    if mode == 'SOFT_LIGHT':    return np.where(L < 0.5, 2.0 * B * L + B * B * (1.0 - 2.0 * L), np.sqrt(B) * (2.0 * L - 1.0) + 2.0 * B * (1.0 - L))
-    if mode == 'LINEAR_LIGHT':  return np.clip(B + 2.0 * L - 1.0, 0, 1)
-    if mode == 'DIFFERENCE':    return np.abs(B - L)
-    if mode == 'EXCLUSION':     return B + L - 2.0 * B * L
-    if mode == 'SUBTRACT':      return np.clip(B - L, 0, 1)
-    if mode == 'DIVIDE':        return np.clip(B / (L + eps), 0, 1)
-    return L
 
 
 class PlaceImageEngine(BaseEngine):
@@ -370,7 +349,7 @@ class PlaceImageEngine(BaseEngine):
         bg_rgb = bg_np[:, :, :3]
         bg_a = bg_np[:, :, 3]
 
-        blended = _apply_blend_mode(bg_rgb, fg_rgb, mode)
+        blended = apply_blend_mode(bg_rgb, fg_rgb, mode)
 
         alpha = fg_a
         out_alpha = alpha + bg_a * (1.0 - alpha)
@@ -393,89 +372,21 @@ class PlaceImageEngine(BaseEngine):
         super().cleanup()
 
 
-class IMAGE_OT_place_image_modal(bpy.types.Operator):
+class IMAGE_OT_place_image_modal(WarpModalBase):
     bl_idname = "image_editor_tools.place_image_modal"
     bl_label = "置入图像"
-    bl_options = {'REGISTER', 'UNDO'}
+    engine_class = PlaceImageEngine
+    tool_key = 'warp:置入图像'
+    tool_label = '置入图像'
+    status_text = "置入图像: 拖拽移动 | 角点缩放 | 旋转 [Shift吸附] | Enter应用 | Esc取消"
+    _drag_attr = '_drag_mode'
+    _drag_none = 'NONE'
 
-    @classmethod
-    def poll(cls, context):
-        return (
-            context.space_data is not None
-            and context.space_data.type == 'IMAGE_EDITOR'
-            and context.space_data.image is not None
-        )
-
-    def modal(self, context, event):
-        engine = PlaceImageEngine._active_instance
-        if not engine or engine.should_exit:
-            return self._finish(context)
-        context.area.tag_redraw()
-
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
-            engine.cleanup()
-            return self._finish(context)
-        elif event.type in {'RET', 'NUMPAD_ENTER'}:
-            engine.apply_to_original()
-            return self._finish(context)
-
+    def _custom_keys(self, context, event, engine):
         if event.type == 'F' and event.value == 'PRESS':
             engine.offset_x = engine.original_image.size[0] / 2.0
             engine.offset_y = engine.original_image.size[1] / 2.0
             engine.scale = 0.5
             engine.rotation = 0.0
-            return {'RUNNING_MODAL'}
-
-        if event.type == 'LEFTMOUSE':
-            if event.value == 'PRESS':
-                engine.handle_mouse_press(event)
-                if engine._drag_mode == 'NONE':
-                    return {'PASS_THROUGH'}
-                return {'RUNNING_MODAL'}
-            elif event.value == 'RELEASE':
-                was_dragging = (engine._drag_mode != 'NONE')
-                engine.handle_mouse_release(event)
-                if not was_dragging:
-                    return {'PASS_THROUGH'}
-
-        elif event.type == 'MOUSEMOVE':
-            if engine._drag_mode != 'NONE':
-                engine.handle_mouse_move(event)
-                return {'RUNNING_MODAL'}
-
-        return {'PASS_THROUGH'}
-
-    def invoke(self, context, event):
-        if context.space_data is None or context.space_data.type != 'IMAGE_EDITOR' or not context.space_data.image:
-            self.report({'WARNING'}, "请在图像编辑器中打开一张图片")
-            return {'CANCELLED'}
-
-        if PlaceImageEngine._active_instance:
-            PlaceImageEngine._active_instance.cleanup()
-
-        self._prev_ui_mode = str(context.space_data.ui_mode)
-        if context.area.ui_type != 'IMAGE_EDITOR':
-            context.area.ui_type = 'IMAGE_EDITOR'
-        context.space_data.ui_mode = 'VIEW'
-
-        bpy.ops.ed.undo_push(message="置入图像")
-        state.current_tool = 'warp:置入图像'
-        PlaceImageEngine(context, context.space_data.image)
-        context.window_manager.modal_handler_add(self)
-        context.workspace.status_text_set("置入图像: 拖拽移动 | 角点缩放 | 旋转 [Shift吸附] | Enter应用 | Esc取消")
-        return {'RUNNING_MODAL'}
-
-    def _finish(self, context):
-        state.current_tool = 'NONE'
-        prev = getattr(self, '_prev_ui_mode', None)
-        if prev is not None:
-            try:
-                area = context.area
-                if area is not None and area.type == 'IMAGE_EDITOR':
-                    sp = area.spaces.active
-                    if sp is not None:
-                        sp.ui_mode = prev
-            except Exception:
-                pass
-        context.workspace.status_text_set(None)
-        return {'FINISHED'}
+            return True
+        return False

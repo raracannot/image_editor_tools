@@ -173,6 +173,20 @@ def _get_mask(np_array, props):
     return np.clip(gray, 0.0, 1.0)
 
 
+def _build_soft_mask_generic(dist, tolerance, fuzziness, inner_factor=0.7):
+    inner = tolerance * inner_factor
+    outer = tolerance
+    if outer <= inner:
+        outer = inner + 0.01
+
+    mask = np.where(dist < inner, 1.0, 0.0).astype(np.float32)
+    soft = (dist >= inner) & (dist < outer)
+    if np.any(soft):
+        t_val = (dist[soft] - inner) / max(outer - inner, 1e-6)
+        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
+    return np.clip(mask, 0.0, 1.0)
+
+
 def _build_soft_mask(lab, target_rgb, tolerance, fuzziness):
     from ..utils.np_img_utils import np_rgb_to_lab
     target_lab = np_rgb_to_lab(np.full((1, 1, 4), list(target_rgb) + [1.0], dtype=np.float32))
@@ -183,17 +197,7 @@ def _build_soft_mask(lab, target_rgb, tolerance, fuzziness):
     ab_dist = np.sqrt(da * da + db * db) / 128.0
     ab_dist = np.clip(ab_dist, 0.0, 1.0)
 
-    inner = tolerance * 0.7
-    outer = tolerance
-    if outer <= inner:
-        outer = inner + 0.01
-
-    mask = np.where(ab_dist < inner, 1.0, 0.0).astype(np.float32)
-    soft = (ab_dist >= inner) & (ab_dist < outer)
-    t = (ab_dist[soft] - inner) / max(outer - inner, 1e-6)
-    mask[soft] = 1.0 - t * (1.0 - fuzziness * 2.0)
-    mask = np.clip(mask, 0.0, 1.0)
-    return mask
+    return _build_soft_mask_generic(ab_dist, tolerance, fuzziness, 0.7)
 
 
 def _lab_lock_replace(np_array, target, replace, tolerance, fuzziness, strength):
@@ -244,17 +248,7 @@ def _hsl_shift_replace(np_array, target, replace, tolerance, fuzziness, strength
 
     dh = abs(h - t_h)
     dh = np.minimum(dh, 1.0 - dh)
-    inner = tolerance * 0.5
-    outer = tolerance
-    if outer <= inner:
-        outer = inner + 0.01
-
-    mask = np.where(dh < inner, 1.0, 0.0).astype(np.float32)
-    soft = (dh >= inner) & (dh < outer)
-    if np.any(soft):
-        t_val = (dh[soft] - inner) / max(outer - inner, 1e-6)
-        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
-    mask = np.clip(mask, 0.0, 1.0)
+    mask = _build_soft_mask_generic(dh, tolerance, fuzziness, 0.5)
 
     s_scale = np.where(mask > 0, r_s / np.maximum(t_s, 0.01), 1.0)
     s_new = np.clip(s * (1.0 + (s_scale - 1.0) * mask), 0.0, 1.0)
@@ -288,17 +282,7 @@ def _ycbcr_lock_replace(np_array, target, replace, tolerance, fuzziness, strengt
     dCr = Cr - t_Cr
     dist = np.sqrt(dCb * dCb + dCr * dCr) / 0.5
     dist = np.clip(dist, 0.0, 1.0)
-
-    inner = tolerance * 0.6
-    outer = tolerance
-    if outer <= inner:
-        outer = inner + 0.01
-    mask = np.where(dist < inner, 1.0, 0.0).astype(np.float32)
-    soft = (dist >= inner) & (dist < outer)
-    if np.any(soft):
-        t_val = (dist[soft] - inner) / max(outer - inner, 1e-6)
-        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
-    mask = np.clip(mask, 0.0, 1.0)
+    mask = _build_soft_mask_generic(dist, tolerance, fuzziness, 0.6)
 
     Cb_new = Cb + (r_Cb - Cb) * mask
     Cr_new = Cr + (r_Cr - Cr) * mask
@@ -322,16 +306,7 @@ def _hue_fill_replace(np_array, target, replace, tolerance, fuzziness, strength)
 
     dh = abs(h - th)
     dh = np.minimum(dh, 1.0 - dh)
-    inner = tolerance * 0.5
-    outer = tolerance
-    if outer <= inner:
-        outer = inner + 0.01
-    mask = np.where(dh < inner, 1.0, 0.0).astype(np.float32)
-    soft = (dh >= inner) & (dh < outer)
-    if np.any(soft):
-        t_val = (dh[soft] - inner) / max(outer - inner, 1e-6)
-        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
-    mask = np.clip(mask, 0.0, 1.0)
+    mask = _build_soft_mask_generic(dh, tolerance, fuzziness, 0.5)
 
     h_offset = (rh - th + 0.5) % 1.0 - 0.5
     h_new = (h + h_offset * mask) % 1.0
@@ -353,16 +328,7 @@ def _rgb_gain_replace(np_array, target, replace, tolerance, fuzziness, strength)
     gain = np.clip(r / t, 0.01, 100.0)
 
     dist = np.sqrt(np.sum((rgb - target) ** 2, axis=-1)) / np.sqrt(3.0)
-    inner = tolerance * 0.5
-    outer = tolerance
-    if outer <= inner:
-        outer = inner + 0.01
-    mask = np.where(dist < inner, 1.0, 0.0).astype(np.float32)
-    soft = (dist >= inner) & (dist < outer)
-    if np.any(soft):
-        t_val = (dist[soft] - inner) / max(outer - inner, 1e-6)
-        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
-    mask = np.clip(mask, 0.0, 1.0)
+    mask = _build_soft_mask_generic(dist, tolerance, fuzziness, 0.5)
 
     result_rgb = np.clip(rgb * (1.0 + (gain - 1.0) * mask[..., np.newaxis]), 0.0, 1.0)
 
@@ -409,17 +375,7 @@ def _lch_lock_replace(np_array, target, replace, tolerance, fuzziness, strength)
     db = b - t_b
     dist = np.sqrt(da * da + db * db) / 128.0
     dist = np.clip(dist, 0.0, 1.0)
-
-    inner = tolerance * 0.7
-    outer = tolerance
-    if outer <= inner:
-        outer = inner + 0.01
-    mask = np.where(dist < inner, 1.0, 0.0).astype(np.float32)
-    soft = (dist >= inner) & (dist < outer)
-    if np.any(soft):
-        t_val = (dist[soft] - inner) / max(outer - inner, 1e-6)
-        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
-    mask = np.clip(mask, 0.0, 1.0)
+    mask = _build_soft_mask_generic(dist, tolerance, fuzziness, 0.7)
 
     a_new = a + (r_a - a) * mask
     b_new = b + (r_b - b) * mask
@@ -448,16 +404,7 @@ def _hsv_lock_replace(np_array, target, replace, tolerance, fuzziness, strength)
 
     dh = abs(h - th)
     dh = np.minimum(dh, 1.0 - dh)
-    inner = tolerance * 0.5
-    outer = tolerance
-    if outer <= inner:
-        outer = inner + 0.01
-    mask = np.where(dh < inner, 1.0, 0.0).astype(np.float32)
-    soft = (dh >= inner) & (dh < outer)
-    if np.any(soft):
-        t_val = (dh[soft] - inner) / max(outer - inner, 1e-6)
-        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
-    mask = np.clip(mask, 0.0, 1.0)
+    mask = _build_soft_mask_generic(dh, tolerance, fuzziness, 0.5)
 
     origin_s = np.mean(s[mask > 0.1]) if np.any(mask > 0.1) else ts
     if origin_s < 0.01:

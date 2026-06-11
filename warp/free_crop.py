@@ -8,6 +8,7 @@ from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
 from ..utils.np_img_utils import blimg_2_npimg, npimg_2_blimg
+from . import WarpModalBase
 
 # ==========================================
 # 核心处理逻辑
@@ -469,93 +470,24 @@ class CropEngine(BaseEngine):
 # 操作器与面板
 # ==========================================
 
-class IMAGE_OT_free_crop_modal(bpy.types.Operator):
+class IMAGE_OT_free_crop_modal(WarpModalBase):
     bl_idname = "image_editor_tools.free_crop_modal"
     bl_label = "自由裁切"
-    bl_options = {'REGISTER', 'UNDO'}
+    engine_class = CropEngine
+    tool_key = 'warp:自由裁切'
+    tool_label = '自由裁切'
+    status_text = "自由裁切: 拖拽边角/旋转 | P填色 | F重置 | Enter应用 | Esc取消"
+    _drag_attr = '_drag_mode'
+    _drag_none = 'NONE'
 
-    @classmethod
-    def poll(cls, context):
-        return (
-            context.space_data is not None
-            and context.space_data.type == 'IMAGE_EDITOR'
-            and context.space_data.image is not None
-        )
-
-    def modal(self, context, event):
-        engine = CropEngine._active_instance
-        if not engine or engine.should_exit:
-            return self._finish(context)
-
-        context.area.tag_redraw()
-
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
-            engine.cleanup()
-            return self._finish(context)
-        elif event.type in {'RET', 'NUMPAD_ENTER'}:
-            engine.apply_to_original()
-            return self._finish(context)
-
+    def _custom_keys(self, context, event, engine):
         if event.type == 'P' and event.value == 'PRESS':
             engine.cycle_padding_mode()
-            return {'RUNNING_MODAL'}
+            return True
         if event.type == 'F' and event.value == 'PRESS':
             engine.reset_transform()
-            return {'RUNNING_MODAL'}
-
-        if event.type == 'LEFTMOUSE':
-            if event.value == 'PRESS':
-                engine.handle_mouse_press(event)
-                if engine._drag_mode == 'NONE':
-                    return {'PASS_THROUGH'}
-                return {'RUNNING_MODAL'}
-            elif event.value == 'RELEASE':
-                was_dragging = (engine._drag_mode != 'NONE')
-                engine.handle_mouse_release(event)
-                if not was_dragging:
-                    return {'PASS_THROUGH'}
-
-        elif event.type == 'MOUSEMOVE':
-            if engine._drag_mode != 'NONE':
-                engine.handle_mouse_move(event)
-                return {'RUNNING_MODAL'}
-
-        return {'PASS_THROUGH'}
-
-    def invoke(self, context, event):
-        if context.space_data.type != 'IMAGE_EDITOR' or not context.space_data.image:
-            self.report({'WARNING'}, "请在图像编辑器中打开一张图片")
-            return {'CANCELLED'}
-
-        if CropEngine._active_instance:
-            CropEngine._active_instance.cleanup()
-
-        self._prev_ui_mode = str(context.space_data.ui_mode)
-        if context.area.ui_type != 'IMAGE_EDITOR':
-            context.area.ui_type = 'IMAGE_EDITOR'
-        context.space_data.ui_mode = 'VIEW'
-
-        bpy.ops.ed.undo_push(message="自由裁切")
-        state.current_tool = 'warp:自由裁切'
-        CropEngine(context, context.space_data.image)
-        context.window_manager.modal_handler_add(self)
-        context.workspace.status_text_set("自由裁切: 拖拽边角/旋转 | P填色 | F重置 | Enter应用 | Esc取消")
-        return {'RUNNING_MODAL'}
-
-    def _finish(self, context):
-        state.current_tool = 'NONE'
-        prev = getattr(self, '_prev_ui_mode', None)
-        if prev is not None:
-            try:
-                area = context.area
-                if area is not None and area.type == 'IMAGE_EDITOR':
-                    sp = area.spaces.active
-                    if sp is not None:
-                        sp.ui_mode = prev
-            except Exception:
-                pass
-        context.workspace.status_text_set(None)
-        return {'FINISHED'}
+            return True
+        return False
 
 
         return {'FINISHED'}

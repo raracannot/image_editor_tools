@@ -8,6 +8,7 @@ from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
 from ..utils.np_img_utils import blimg_2_npimg, npimg_2_blimg
+from . import WarpModalBase
 
 
 SNAP_STEP = 0.1
@@ -199,79 +200,12 @@ class SliceImageEngine(BaseEngine):
             self.cleanup()
 
 
-class IMAGE_OT_slice_image_modal(bpy.types.Operator):
+class IMAGE_OT_slice_image_modal(WarpModalBase):
     bl_idname = "image_editor_tools.slice_image_modal"
     bl_label = "切分图像"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        return (
-            context.space_data is not None
-            and context.space_data.type == 'IMAGE_EDITOR'
-            and context.space_data.image is not None
-        )
-
-    def modal(self, context, event):
-        engine = SliceImageEngine._active_instance
-        if not engine or engine.should_exit:
-            return self._finish(context)
-        context.area.tag_redraw()
-
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
-            engine.cleanup()
-            return self._finish(context)
-        elif event.type in {'RET', 'NUMPAD_ENTER'}:
-            engine.apply_to_original()
-            return self._finish(context)
-
-        if event.type == 'LEFTMOUSE':
-            if event.value == 'PRESS':
-                if engine.handle_mouse_press(event):
-                    return {'RUNNING_MODAL'}
-                return {'PASS_THROUGH'}
-            elif event.value == 'RELEASE':
-                engine.handle_mouse_release(event)
-                return {'PASS_THROUGH'}
-
-        elif event.type == 'MOUSEMOVE':
-            if engine._drag_line is not None:
-                engine.handle_mouse_move(event)
-                return {'RUNNING_MODAL'}
-
-        return {'PASS_THROUGH'}
-
-    def invoke(self, context, event):
-        if context.space_data is None or context.space_data.type != 'IMAGE_EDITOR' or not context.space_data.image:
-            self.report({'WARNING'}, "请在图像编辑器中打开一张图片")
-            return {'CANCELLED'}
-
-        if SliceImageEngine._active_instance:
-            SliceImageEngine._active_instance.cleanup()
-
-        self._prev_ui_mode = str(context.space_data.ui_mode)
-        if context.area.ui_type != 'IMAGE_EDITOR':
-            context.area.ui_type = 'IMAGE_EDITOR'
-        context.space_data.ui_mode = 'VIEW'
-
-        bpy.ops.ed.undo_push(message="切分图像")
-        state.current_tool = 'warp:切分图像'
-        SliceImageEngine(context, context.space_data.image)
-        context.window_manager.modal_handler_add(self)
-        context.workspace.status_text_set("切分图像: 拖拽分割线 | Shift 吸附 | Enter 应用 | Esc 取消")
-        return {'RUNNING_MODAL'}
-
-    def _finish(self, context):
-        state.current_tool = 'NONE'
-        prev = getattr(self, '_prev_ui_mode', None)
-        if prev is not None:
-            try:
-                area = context.area
-                if area is not None and area.type == 'IMAGE_EDITOR':
-                    sp = area.spaces.active
-                    if sp is not None:
-                        sp.ui_mode = prev
-            except Exception:
-                pass
-        context.workspace.status_text_set(None)
-        return {'FINISHED'}
+    engine_class = SliceImageEngine
+    tool_key = 'warp:切分图像'
+    tool_label = '切分图像'
+    status_text = "切分图像: 拖拽分割线 | Shift 吸附 | Enter 应用 | Esc 取消"
+    _drag_attr = '_drag_line'
+    _drag_none = None

@@ -2,6 +2,7 @@
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
+from ..utils.blend_modes import apply_blend_mode
 
 BLEND_MODE_ITEMS = [
     ('MIX', "正常", ""),
@@ -20,46 +21,6 @@ BLEND_MODE_ITEMS = [
     ('SUBTRACT', "减去", ""),
     ('DIVIDE', "划分", ""),
 ]
-
-
-def _apply_blend_mode(bg, fg, mode):
-    eps = 1e-5
-    B, L = bg, fg
-    if mode == 'MIX':
-        return L
-    elif mode == 'DARKEN':
-        return np.minimum(B, L)
-    elif mode == 'MULTIPLY':
-        return B * L
-    elif mode == 'BURN':
-        return np.clip(1.0 - (1.0 - B) / (L + eps), 0, 1)
-    elif mode == 'LIGHTEN':
-        return np.maximum(B, L)
-    elif mode == 'SCREEN':
-        return 1.0 - (1.0 - B) * (1.0 - L)
-    elif mode == 'DODGE':
-        return np.clip(B / (1.0 - L + eps), 0, 1)
-    elif mode == 'ADD':
-        return np.clip(B + L, 0, 1)
-    elif mode == 'OVERLAY':
-        return np.where(B < 0.5, 2.0 * B * L, 1.0 - 2.0 * (1.0 - B) * (1.0 - L))
-    elif mode == 'SOFT_LIGHT':
-        return np.where(
-            L < 0.5,
-            2.0 * B * L + B * B * (1.0 - 2.0 * L),
-            np.sqrt(B) * (2.0 * L - 1.0) + 2.0 * B * (1.0 - L),
-        )
-    elif mode == 'LINEAR_LIGHT':
-        return np.clip(B + 2.0 * L - 1.0, 0, 1)
-    elif mode == 'DIFFERENCE':
-        return np.abs(B - L)
-    elif mode == 'EXCLUSION':
-        return B + L - 2.0 * B * L
-    elif mode == 'SUBTRACT':
-        return np.clip(B - L, 0, 1)
-    elif mode == 'DIVIDE':
-        return np.clip(B / (L + eps), 0, 1)
-    return L
 
 
 class CompositeTool(BaseTool):
@@ -146,7 +107,7 @@ class CompositeTool(BaseTool):
             fg_rgb = fg_np[:, :, :3]
             fg_a = fg_np[:, :, 3]
 
-            blended = _apply_blend_mode(bg_rgb, fg_rgb, mode)
+            blended = apply_blend_mode(bg_rgb, fg_rgb, mode)
             CompositeTool._cache_key = cache_key
             CompositeTool._cache_composited = (blended, fg_a)
 

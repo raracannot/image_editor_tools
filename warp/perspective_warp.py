@@ -8,6 +8,7 @@ from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
 from ..utils.np_img_utils import blimg_2_npimg
+from . import WarpModalBase
 
 # ==========================================
 # 核心处理逻辑 (纯 Numpy 单应性矩阵求解)
@@ -360,98 +361,24 @@ class PerspectiveEngine(BaseEngine):
 # 操作器与面板
 # ==========================================
 
-class IMAGE_OT_perspective_warp_modal(bpy.types.Operator):
+class IMAGE_OT_perspective_warp_modal(WarpModalBase):
     bl_idname = "image_editor_tools.perspective_warp_modal"
     bl_label = "透视形变"
-    bl_options = {'REGISTER', 'UNDO'}
+    engine_class = PerspectiveEngine
+    tool_key = 'warp:透视形变'
+    tool_label = '透视形变'
+    status_text = "透视形变: L切换模式 | P填色 | F重置 | Enter应用 | Esc取消"
 
-    @classmethod
-    def poll(cls, context):
-        return (
-            context.space_data is not None
-            and context.space_data.type == 'IMAGE_EDITOR'
-            and context.space_data.image is not None
-        )
-
-    def modal(self, context, event):
-        engine = PerspectiveEngine._active_instance
-        if not engine or engine.should_exit:
-            return self._finish(context)
-
-        context.area.tag_redraw()
-
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
-            engine.cleanup()
-            return self._finish(context)
-        elif event.type in {'RET', 'NUMPAD_ENTER'}:
-            engine.apply_to_original()
-            return self._finish(context)
-            
+    def _custom_keys(self, context, event, engine):
         if event.type == 'F' and event.value == 'PRESS':
             engine.reset_transform()
-            return {'RUNNING_MODAL'}
-        # 新增：按 P 键切换填充模式
+            return True
         if event.type == 'P' and event.value == 'PRESS':
             engine.cycle_padding_mode()
-            return {'RUNNING_MODAL'}
-            
+            return True
         if event.type == 'L' and event.value == 'PRESS':
             engine.mode = 'WARP' if engine.mode == 'LAYOUT' else 'LAYOUT'
-            return {'RUNNING_MODAL'}
-            
-        if event.type == 'LEFTMOUSE':
-            if event.value == 'PRESS':
-                hit = engine.handle_mouse_press(event)
-                if not hit:
-                    return {'PASS_THROUGH'}
-                return {'RUNNING_MODAL'}
-            elif event.value == 'RELEASE':
-                was_dragging = (engine._drag_idx != -1)
-                engine.handle_mouse_release(event)
-                if not was_dragging:
-                    return {'PASS_THROUGH'}
-                return {'RUNNING_MODAL'}
-                
-        elif event.type == 'MOUSEMOVE':
-            if engine._drag_idx != -1:
-                engine.handle_mouse_move(event)
-                return {'RUNNING_MODAL'}
-
-        return {'PASS_THROUGH'}
-
-    def invoke(self, context, event):
-        if context.space_data.type != 'IMAGE_EDITOR' or not context.space_data.image:
-            self.report({'WARNING'}, "请在图像编辑器中打开一张图片")
-            return {'CANCELLED'}
-
-        if PerspectiveEngine._active_instance:
-            PerspectiveEngine._active_instance.cleanup()
-
-        self._prev_ui_mode = str(context.space_data.ui_mode)
-        if context.area.ui_type != 'IMAGE_EDITOR':
-            context.area.ui_type = 'IMAGE_EDITOR'
-        context.space_data.ui_mode = 'VIEW'
-
-        bpy.ops.ed.undo_push(message="透视形变")
-        state.current_tool = 'warp:透视形变'
-        PerspectiveEngine(context, context.space_data.image)
-        context.window_manager.modal_handler_add(self)
-        context.workspace.status_text_set("透视形变: L切换模式 | P填色 | F重置 | Enter应用 | Esc取消")
-        return {'RUNNING_MODAL'}
-
-    def _finish(self, context):
-        state.current_tool = 'NONE'
-        prev = getattr(self, '_prev_ui_mode', None)
-        if prev is not None:
-            try:
-                area = context.area
-                if area is not None and area.type == 'IMAGE_EDITOR':
-                    sp = area.spaces.active
-                    if sp is not None:
-                        sp.ui_mode = prev
-            except Exception:
-                pass
-        context.workspace.status_text_set(None)
-        return {'FINISHED'}
+            return True
+        return False
 
         return {'FINISHED'}
