@@ -20,8 +20,7 @@ class ColorReplaceTool(BaseTool):
                     ('HSV_LOCK', "HSV 亮度锁定", "HSV亮度+饱和度, 仅偏移色相"),
                     ('HUE_SHIFT', "HSL 色相偏移", "色相偏移 + 饱和度迁移"),
                     ('HUE_FILL', "色相统一填充", "整块色相区域统一替换"),
-                    ('RGB_GAIN', "RGB 增益偏移", "通道级增益+偏移 (非破坏式)"),
-                    ('DUOTONE', "双色调映射", "亮度→渐变颜色映射"),
+                     ('RGB_GAIN', "RGB 增益偏移", "通道级增益+偏移 (非破坏式)"),
                 ],
                 default='LAB_LOCK',
                 update=_on_param_update,
@@ -88,7 +87,7 @@ class ColorReplaceTool(BaseTool):
         mask = _get_mask(np_array, props)
         target = np.asarray(props.crep_target, dtype=np.float32)
         replace = np.asarray(props.crep_replace, dtype=np.float32)
-        tol = max(0.01, props.crep_tolerance)
+        tol = max(0.001, props.crep_tolerance ** 0.5)
         fuzzy = max(0.0, props.crep_fuzziness)
         strength = props.crep_strength
 
@@ -105,8 +104,6 @@ class ColorReplaceTool(BaseTool):
             result = _hue_fill_replace(np_array, target, replace, tol, fuzzy, strength)
         elif mode == 'RGB_GAIN':
             result = _rgb_gain_replace(np_array, target, replace, tol, fuzzy, strength)
-        elif mode == 'DUOTONE':
-            result = _duotone_replace(np_array, target, replace, tol, fuzzy, strength)
         else:
             result = _hsl_shift_replace(np_array, target, replace, tol, fuzzy, strength)
 
@@ -428,20 +425,6 @@ def _hsv_lock_replace(np_array, target, replace, tolerance, fuzziness, strength)
     result = np.zeros_like(np_array)
     sm = mask[..., np.newaxis] * strength
     result[:, :, :3] = np.clip(rgb * (1.0 - sm) + result_rgb * sm, 0, 1)
-    result[:, :, 3] = alpha_ch
-    return result
-
-
-def _duotone_replace(np_array, target, replace, tolerance, fuzziness, strength):
-    rgb = np_array[:, :, :3].copy()
-    alpha_ch = np_array[:, :, 3].copy()
-
-    lum = rgb[:, :, 0] * 0.299 + rgb[:, :, 1] * 0.587 + rgb[:, :, 2] * 0.114
-
-    tone = replace * lum[..., np.newaxis] + target * (1.0 - lum[..., np.newaxis])
-
-    result = np.zeros_like(np_array)
-    result[:, :, :3] = np.clip(rgb * (1.0 - strength) + tone * strength, 0, 1)
     result[:, :, 3] = alpha_ch
     return result
 
