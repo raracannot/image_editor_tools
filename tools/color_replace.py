@@ -16,9 +16,12 @@ class ColorReplaceTool(BaseTool):
                 items=[
                     ('LAB_LOCK', "LAB 明度锁定", "保留纹理光影, 仅替换色度 (最自然)"),
                     ('YCBCR_LOCK', "YCbCr 亮度锁定", "视频级亮度分离, 感知均匀"),
+                    ('LCH_LOCK', "LCh 色度锁定", "极坐标LAB, 保留饱和度结构"),
+                    ('HSV_LOCK', "HSV 亮度锁定", "HSV亮度+饱和度, 仅偏移色相"),
                     ('HUE_SHIFT', "HSL 色相偏移", "色相偏移 + 饱和度迁移"),
                     ('HUE_FILL', "色相统一填充", "整块色相区域统一替换"),
                     ('RGB_GAIN', "RGB 增益偏移", "通道级增益+偏移 (非破坏式)"),
+                    ('DUOTONE', "双色调映射", "亮度→渐变颜色映射"),
                 ],
                 default='LAB_LOCK',
                 update=_on_param_update,
@@ -94,10 +97,16 @@ class ColorReplaceTool(BaseTool):
             result = _lab_lock_replace(np_array, target, replace, tol, fuzzy, strength)
         elif mode == 'YCBCR_LOCK':
             result = _ycbcr_lock_replace(np_array, target, replace, tol, fuzzy, strength)
+        elif mode == 'LCH_LOCK':
+            result = _lch_lock_replace(np_array, target, replace, tol, fuzzy, strength)
+        elif mode == 'HSV_LOCK':
+            result = _hsv_lock_replace(np_array, target, replace, tol, fuzzy, strength)
         elif mode == 'HUE_FILL':
             result = _hue_fill_replace(np_array, target, replace, tol, fuzzy, strength)
         elif mode == 'RGB_GAIN':
             result = _rgb_gain_replace(np_array, target, replace, tol, fuzzy, strength)
+        elif mode == 'DUOTONE':
+            result = _duotone_replace(np_array, target, replace, tol, fuzzy, strength)
         else:
             result = _hsl_shift_replace(np_array, target, replace, tol, fuzzy, strength)
 
@@ -335,6 +344,106 @@ def _ycbcr_to_rgb(Y, Cb, Cr):
     ycbcr = np.stack([Y, Cb, Cr], axis=-1)
     rgb = np.tensordot(ycbcr, M.T, axes=([2], [1]))
     return np.clip(rgb, 0.0, 1.0)
+
+
+def _lch_lock_replace(np_array, target, replace, tolerance, fuzziness, strength):
+    from ..utils.np_img_utils import np_rgb_to_lab
+    rgb = np_array[:, :, :3].copy()
+    alpha_ch = np_array[:, :, 3].copy()
+
+    lab = np_rgb_to_lab(np_array)
+    L, a, b = lab[:, :, 0], lab[:, :, 1], lab[:, :, 2]
+    C = np.sqrt(a * a + b * b)
+    h = np.arctan2(b, a)
+
+    target_lab = np_rgb_to_lab(np.full((1, 1, 4), list(target) + [1.0], dtype=np.float32))
+    t_a, t_b = target_lab[0, 0, 1], target_lab[0, 0, 2]
+    replace_lab = np_rgb_to_lab(np.full((1, 1, 4), list(replace) + [1.0], dtype=np.float32))
+    r_a, r_b = replace_lab[0, 0, 1], replace_lab[0, 0, 2]
+
+    da = a - t_a
+    db = b - t_b
+    dist = np.sqrt(da * da + db * db) / 128.0
+    dist = np.clip(dist, 0.0, 1.0)
+
+    inner = tolerance * 0.7
+    outer = tolerance
+    if outer <= inner:
+        outer = inner + 0.01
+    mask = np.where(dist < inner, 1.0, 0.0).astype(np.float32)
+    soft = (dist >= inner) & (dist < outer)
+    if np.any(soft):
+        t_val = (dist[soft] - inner) / max(outer - inner, 1e-6)
+        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
+    mask = np.clip(mask, 0.0, 1.0)
+
+    a_new = a + (r_a - a) * mask
+    b_new = b + (r_b - b) * mask
+
+    lab_new = np.stack([L, a_new, b_new], axis=-1)
+    from ..utils.np_img_utils import np_lab_to_rgb
+    result_rgb = np_lab_to_rgb(lab_new)
+
+    result = np.zeros_like(np_array)
+    sm = mask[..., np.newaxis] * strength
+    result[:, :, :3] = np.clip(rgb * (1.0 - sm) + result_rgb * sm, 0, 1)
+    result[:, :, 3] = alpha_ch
+    return result
+
+
+def _hsv_lock_replace(np_array, target, replace, tolerance, fuzziness, strength):
+    from ..utils.np_img_utils import np_rgb_to_hsv, np_hsv_to_rgb
+    rgb = np_array[:, :, :3].copy()
+    alpha_ch = np_array[:, :, 3].copy()
+
+    h, s, v = np_rgb_to_hsv(rgb)
+    target_hsv = np_rgb_to_hsv(target.reshape(1, 1, 3))
+    replace_hsv = np_rgb_to_hsv(replace.reshape(1, 1, 3))
+    th, ts = target_hsv[0][0, 0], target_hsv[1][0, 0]
+    rh, rs = replace_hsv[0][0, 0], replace_hsv[1][0, 0]
+
+    dh = abs(h - th)
+    dh = np.minimum(dh, 1.0 - dh)
+    inner = tolerance * 0.5
+    outer = tolerance
+    if outer <= inner:
+        outer = inner + 0.01
+    mask = np.where(dh < inner, 1.0, 0.0).astype(np.float32)
+    soft = (dh >= inner) & (dh < outer)
+    if np.any(soft):
+        t_val = (dh[soft] - inner) / max(outer - inner, 1e-6)
+        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
+    mask = np.clip(mask, 0.0, 1.0)
+
+    origin_s = np.mean(s[mask > 0.1]) if np.any(mask > 0.1) else ts
+    if origin_s < 0.01:
+        origin_s = 0.01
+    s_ratio = rs / origin_s
+    h_offset = (rh - th + 0.5) % 1.0 - 0.5
+    h_new = (h + h_offset * mask) % 1.0
+    s_new = np.clip(s * (1.0 + (s_ratio - 1.0) * mask), 0.0, 1.0)
+
+    result_rgb = np_hsv_to_rgb(h_new, s_new, v)
+
+    result = np.zeros_like(np_array)
+    sm = mask[..., np.newaxis] * strength
+    result[:, :, :3] = np.clip(rgb * (1.0 - sm) + result_rgb * sm, 0, 1)
+    result[:, :, 3] = alpha_ch
+    return result
+
+
+def _duotone_replace(np_array, target, replace, tolerance, fuzziness, strength):
+    rgb = np_array[:, :, :3].copy()
+    alpha_ch = np_array[:, :, 3].copy()
+
+    lum = rgb[:, :, 0] * 0.299 + rgb[:, :, 1] * 0.587 + rgb[:, :, 2] * 0.114
+
+    tone = replace * lum[..., np.newaxis] + target * (1.0 - lum[..., np.newaxis])
+
+    result = np.zeros_like(np_array)
+    result[:, :, :3] = np.clip(rgb * (1.0 - strength) + tone * strength, 0, 1)
+    result[:, :, 3] = alpha_ch
+    return result
 
 
 def _blend(original, replaced, mask):
