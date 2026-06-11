@@ -106,7 +106,7 @@ def _split_preview(np_array, ch):
 
 
 def _merge_preview(np_array, props):
-    img_w, img_h = np_array.shape[:2]
+    img_h, img_w = np_array.shape[:2]
     out = np.zeros_like(np_array)
 
     for ch_idx, img_key, src_key in [
