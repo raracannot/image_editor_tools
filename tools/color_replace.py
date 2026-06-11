@@ -15,7 +15,10 @@ class ColorReplaceTool(BaseTool):
                 name="算法",
                 items=[
                     ('LAB_LOCK', "LAB 明度锁定", "保留纹理光影, 仅替换色度 (最自然)"),
+                    ('YCBCR_LOCK', "YCbCr 亮度锁定", "视频级亮度分离, 感知均匀"),
                     ('HUE_SHIFT', "HSL 色相偏移", "色相偏移 + 饱和度迁移"),
+                    ('HUE_FILL', "色相统一填充", "整块色相区域统一替换"),
+                    ('RGB_GAIN', "RGB 增益偏移", "通道级增益+偏移 (非破坏式)"),
                 ],
                 default='LAB_LOCK',
                 update=_on_param_update,
@@ -86,8 +89,15 @@ class ColorReplaceTool(BaseTool):
         fuzzy = max(0.0, props.crep_fuzziness)
         strength = props.crep_strength
 
-        if props.crep_mode == 'LAB_LOCK':
+        mode = props.crep_mode
+        if mode == 'LAB_LOCK':
             result = _lab_lock_replace(np_array, target, replace, tol, fuzzy, strength)
+        elif mode == 'YCBCR_LOCK':
+            result = _ycbcr_lock_replace(np_array, target, replace, tol, fuzzy, strength)
+        elif mode == 'HUE_FILL':
+            result = _hue_fill_replace(np_array, target, replace, tol, fuzzy, strength)
+        elif mode == 'RGB_GAIN':
+            result = _rgb_gain_replace(np_array, target, replace, tol, fuzzy, strength)
         else:
             result = _hsl_shift_replace(np_array, target, replace, tol, fuzzy, strength)
 
@@ -209,6 +219,122 @@ def _hsl_shift_replace(np_array, target, replace, tolerance, fuzziness, strength
     result[:, :, :3] = np.clip(rgb * (1.0 - s_mask) + result_rgb * s_mask, 0, 1)
     result[:, :, 3] = alpha_ch
     return result
+
+
+def _ycbcr_lock_replace(np_array, target, replace, tolerance, fuzziness, strength):
+    rgb = np_array[:, :, :3].copy()
+    alpha_ch = np_array[:, :, 3].copy()
+
+    Y, Cb, Cr = _rgb_to_ycbcr(rgb)
+    t_Y, t_Cb, t_Cr = _rgb_to_ycbcr(target.reshape(1, 1, 3))
+    r_Y, r_Cb, r_Cr = _rgb_to_ycbcr(replace.reshape(1, 1, 3))
+    t_Cb, t_Cr = t_Cb[0, 0], t_Cr[0, 0]
+    r_Cb, r_Cr = r_Cb[0, 0], r_Cr[0, 0]
+
+    dCb = Cb - t_Cb
+    dCr = Cr - t_Cr
+    dist = np.sqrt(dCb * dCb + dCr * dCr) / 0.5
+    dist = np.clip(dist, 0.0, 1.0)
+
+    inner = tolerance * 0.6
+    outer = tolerance
+    if outer <= inner:
+        outer = inner + 0.01
+    mask = np.where(dist < inner, 1.0, 0.0).astype(np.float32)
+    soft = (dist >= inner) & (dist < outer)
+    if np.any(soft):
+        t_val = (dist[soft] - inner) / max(outer - inner, 1e-6)
+        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
+    mask = np.clip(mask, 0.0, 1.0)
+
+    Cb_new = Cb + (r_Cb - Cb) * mask
+    Cr_new = Cr + (r_Cr - Cr) * mask
+    result_rgb = _ycbcr_to_rgb(Y, Cb_new, Cr_new)
+
+    result = np.zeros_like(np_array)
+    sm = mask[..., np.newaxis] * strength
+    result[:, :, :3] = np.clip(rgb * (1.0 - sm) + result_rgb * sm, 0, 1)
+    result[:, :, 3] = alpha_ch
+    return result
+
+
+def _hue_fill_replace(np_array, target, replace, tolerance, fuzziness, strength):
+    from ..utils.np_img_utils import np_rgb_to_hsv, np_hsv_to_rgb
+    rgb = np_array[:, :, :3].copy()
+    alpha_ch = np_array[:, :, 3].copy()
+
+    h, s, v = np_rgb_to_hsv(rgb)
+    th = np_rgb_to_hsv(target.reshape(1, 1, 3))[0][0, 0]
+    rh = np_rgb_to_hsv(replace.reshape(1, 1, 3))[0][0, 0]
+
+    dh = abs(h - th)
+    dh = np.minimum(dh, 1.0 - dh)
+    inner = tolerance * 0.5
+    outer = tolerance
+    if outer <= inner:
+        outer = inner + 0.01
+    mask = np.where(dh < inner, 1.0, 0.0).astype(np.float32)
+    soft = (dh >= inner) & (dh < outer)
+    if np.any(soft):
+        t_val = (dh[soft] - inner) / max(outer - inner, 1e-6)
+        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
+    mask = np.clip(mask, 0.0, 1.0)
+
+    h_offset = (rh - th + 0.5) % 1.0 - 0.5
+    h_new = (h + h_offset * mask) % 1.0
+    result_rgb = np_hsv_to_rgb(h_new, s, v)
+
+    result = np.zeros_like(np_array)
+    sm = mask[..., np.newaxis] * strength
+    result[:, :, :3] = np.clip(rgb * (1.0 - sm) + result_rgb * sm, 0, 1)
+    result[:, :, 3] = alpha_ch
+    return result
+
+
+def _rgb_gain_replace(np_array, target, replace, tolerance, fuzziness, strength):
+    rgb = np_array[:, :, :3].copy()
+    alpha_ch = np_array[:, :, 3].copy()
+
+    t = np.clip(target, 0.01, 1.0)
+    r = np.clip(replace, 0.0, 1.0)
+    gain = np.clip(r / t, 0.01, 100.0)
+
+    dist = np.sqrt(np.sum((rgb - target) ** 2, axis=-1)) / np.sqrt(3.0)
+    inner = tolerance * 0.5
+    outer = tolerance
+    if outer <= inner:
+        outer = inner + 0.01
+    mask = np.where(dist < inner, 1.0, 0.0).astype(np.float32)
+    soft = (dist >= inner) & (dist < outer)
+    if np.any(soft):
+        t_val = (dist[soft] - inner) / max(outer - inner, 1e-6)
+        mask[soft] = 1.0 - t_val * (1.0 - fuzziness * 2.0)
+    mask = np.clip(mask, 0.0, 1.0)
+
+    result_rgb = np.clip(rgb * (1.0 + (gain - 1.0) * mask[..., np.newaxis]), 0.0, 1.0)
+
+    result = np.zeros_like(np_array)
+    sm = mask[..., np.newaxis] * strength
+    result[:, :, :3] = np.clip(rgb * (1.0 - sm) + result_rgb * sm, 0, 1)
+    result[:, :, 3] = alpha_ch
+    return result
+
+
+def _rgb_to_ycbcr(rgb):
+    M = np.array([[0.299, 0.587, 0.114],
+                  [-0.168736, -0.331264, 0.5],
+                  [0.5, -0.418688, -0.081312]], dtype=np.float32)
+    ycbcr = np.tensordot(rgb, M.T, axes=([2], [1]))
+    return ycbcr[..., 0], ycbcr[..., 1], ycbcr[..., 2]
+
+
+def _ycbcr_to_rgb(Y, Cb, Cr):
+    M = np.array([[1.0, 0.0, 1.402],
+                  [1.0, -0.344136, -0.714136],
+                  [1.0, 1.772, 0.0]], dtype=np.float32)
+    ycbcr = np.stack([Y, Cb, Cr], axis=-1)
+    rgb = np.tensordot(ycbcr, M.T, axes=([2], [1]))
+    return np.clip(rgb, 0.0, 1.0)
 
 
 def _blend(original, replaced, mask):
