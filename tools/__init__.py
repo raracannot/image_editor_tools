@@ -33,6 +33,7 @@ from .invert import InvertTool
 from .levels import LevelsTool
 from .channel_mixer import ChannelMixerTool
 from .channel import ChannelTool
+from .color_replace import ColorReplaceTool
 from .operators import classes as operator_classes
 
 TOOLS = {
@@ -61,4 +62,5 @@ TOOLS = {
     'levels': LevelsTool,
     'channel_mixer': ChannelMixerTool,
     'channel': ChannelTool,
+    'color_replace': ColorReplaceTool,
 }

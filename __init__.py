@@ -87,6 +87,8 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             op.tool_id = 'mixer'
             op = col.operator("image_editor_tools.tool_start", text="色阶", icon='CON_ACTION')
             op.tool_id = 'levels'
+            op = col.operator("image_editor_tools.tool_start", text="颜色替换", icon='COLOR')
+            op.tool_id = 'color_replace'
             op = col.operator("image_editor_tools.tool_start", text="色彩迁徙", icon='COLOR')
             op.tool_id = 'color_transfer'
             op = col.operator("image_editor_tools.tool_start", text="色调分离", icon='MOD_MASK')
