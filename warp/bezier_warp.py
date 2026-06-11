@@ -8,7 +8,7 @@ from gpu_extras.batch import batch_for_shader
 from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
-from . import WarpModalBase
+from .base_op import WarpModalBase
 
 
 class MeshWarpEngine(BaseEngine):

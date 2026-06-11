@@ -8,7 +8,7 @@ from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
 from ..utils.np_img_utils import blimg_2_npimg
-from . import WarpModalBase
+from .base_op import WarpModalBase
 
 # ==========================================
 # 核心处理逻辑 (纯 Numpy 单应性矩阵求解)

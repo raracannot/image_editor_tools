@@ -8,7 +8,7 @@ from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
 from ..utils.np_img_utils import blimg_2_npimg, npimg_2_blimg
-from . import WarpModalBase
+from .base_op import WarpModalBase
 
 
 SNAP_STEP = 0.1

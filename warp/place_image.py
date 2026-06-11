@@ -9,7 +9,7 @@ from .. import state
 from ..translation import pget_tmpl
 from ..utils.np_img_utils import blimg_2_npimg, npimg_2_blimg
 from ..utils.blend_modes import apply_blend_mode
-from . import WarpModalBase
+from .base_op import WarpModalBase
 
 
 BLEND_MODE_ITEMS = [
