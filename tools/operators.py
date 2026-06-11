@@ -38,6 +38,10 @@ class IMAGE_OT_tool_start(bpy.types.Operator):
         props = context.scene.image_editor_tools
         state.current_tool = self.tool_id
 
+        self._offset_drag = False
+        self._offset_start_mouse = (0, 0)
+        self._offset_start_factor = (0.0, 0.0)
+
         bpy.ops.ed.undo_push(message=pget_tmpl("进入{label}模态", label=tool.label))
 
         wm = context.window_manager
@@ -77,18 +81,42 @@ class IMAGE_OT_tool_start(bpy.types.Operator):
                 if event.value == 'PRESS':
                     if engine.handle_mouse_press(event):
                         return {'RUNNING_MODAL'}
+                    if state.current_tool == 'offset':
+                        ox, oy, dw, dh = engine._img_rect
+                        if dw > 0 and dh > 0:
+                            mx = event.mouse_region_x
+                            my = event.mouse_region_y
+                            if ox <= mx <= ox + dw and oy <= my <= oy + dh:
+                                self._offset_drag = True
+                                self._offset_start_mouse = (mx, my)
+                                props = context.scene.image_editor_tools
+                                self._offset_start_factor = (props.offset_h_factor, props.offset_v_factor)
+                                return {'RUNNING_MODAL'}
                 elif event.value == 'RELEASE':
                     engine.handle_mouse_release(event)
+                    self._offset_drag = False
                     return {'PASS_THROUGH'}
 
             elif event.type == 'MOUSEMOVE':
                 if engine._dragging:
                     if engine.handle_mouse_move(event):
                         return {'RUNNING_MODAL'}
+                elif getattr(self, '_offset_drag', False):
+                    ox, oy, dw, dh = engine._img_rect
+                    if dw > 0 and dh > 0:
+                        mx = event.mouse_region_x
+                        my = event.mouse_region_y
+                        dx = (mx - self._offset_start_mouse[0]) / dw
+                        dy = (my - self._offset_start_mouse[1]) / dh
+                        props = context.scene.image_editor_tools
+                        props.offset_h_factor = max(-1.0, min(1.0, self._offset_start_factor[0] + dx))
+                        props.offset_v_factor = max(-1.0, min(1.0, self._offset_start_factor[1] + dy))
+                    return {'RUNNING_MODAL'}
 
         return {'PASS_THROUGH'}
 
     def _finish(self, context):
+        self._offset_drag = False
         engine = getattr(self, '_engine', None)
         if engine is not None:
             props = context.scene.image_editor_tools
