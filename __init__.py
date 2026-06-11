@@ -139,8 +139,6 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             op.tool_id = 'height_to_ao'
             op = col.operator("image_editor_tools.tool_start", text="曲率图", icon='CURVE_DATA')
             op.tool_id = 'curvature'
-            op = col.operator("image_editor_tools.tool_start", text="粗糙度", icon='MOD_NOISE')
-            op.tool_id = 'roughness'
 
             op = col.operator("image_editor_tools.tool_start", text="贴图无缝化", icon='MOD_TRIANGULATE')
             op.tool_id = 'seamless'
@@ -149,9 +147,7 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             op = col.operator("image_editor_tools.tool_start", text="图像合成", icon='NODE_COMPOSITING')
             op.tool_id = 'composite'
             op = col.operator("image_editor_tools.tool_start", text="通道修改", icon='TEXTURE')
-            op.tool_id = 'channel'
-            op = col.operator("image_editor_tools.tool_start", text="边缘扩展", icon='MOD_SOLIDIFY')
-            op.tool_id = 'edge_dilate'            
+            op.tool_id = 'channel'            
 
 
         # ── 几何变形 ──

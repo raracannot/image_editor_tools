@@ -33,7 +33,7 @@ from .invert import InvertTool
 from .levels import LevelsTool
 from .channel_mixer import ChannelMixerTool
 from .channel import ChannelTool
-from .texture import HeightToAOTool, CurvatureTool, EdgeDilateTool, RoughnessTool
+from .texture import HeightToAOTool, CurvatureTool
 from .operators import classes as operator_classes
 
 TOOLS = {
@@ -64,6 +64,4 @@ TOOLS = {
     'channel': ChannelTool,
     'height_to_ao': HeightToAOTool,
     'curvature': CurvatureTool,
-    'edge_dilate': EdgeDilateTool,
-    'roughness': RoughnessTool,
 }
