@@ -479,27 +479,3 @@ class IMAGE_OT_place_image_modal(bpy.types.Operator):
                 pass
         context.workspace.status_text_set(None)
         return {'FINISHED'}
-
-
-class IMAGE_OT_place_image_from_clipboard(bpy.types.Operator):
-    bl_idname = "image_editor_tools.place_image_from_clipboard"
-    bl_label = ""
-    bl_description = "从剪贴板导入图像作为前景图"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        try:
-            from ..utils.clipboard_image import import_image_from_clipboard
-            img = import_image_from_clipboard()
-            if img is None:
-                self.report({'WARNING'}, "剪贴板中无有效图像")
-                return {'CANCELLED'}
-            props = context.scene.image_editor_tools
-            props.place_img_fg = img
-            if PlaceImageEngine._active_instance is not None:
-                PlaceImageEngine._active_instance._load_fg_image()
-            self.report({'INFO'}, f"已导入: {img.name}")
-        except Exception as e:
-            self.report({'ERROR'}, f"剪贴板导入失败: {e}")
-            return {'CANCELLED'}
-        return {'FINISHED'}

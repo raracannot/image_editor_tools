@@ -176,7 +176,8 @@ class IMAGEEDITOR_TOOLS_PT_ToolPanel(bpy.types.Panel):
             if state.current_tool == 'warp:置入图像':
                 row = layout.row(align=True)
                 row.prop(props, "place_img_fg", text="前景图")
-                row.operator("image_editor_tools.place_image_from_clipboard", text="", icon='PASTEDOWN')
+                op = row.operator("image_editor_tools.clipboard_paste_to_prop", text="", icon='PASTEDOWN')
+                op.target_prop = "place_img_fg"
                 if props.place_img_fg is not None:
                     layout.prop(props, "place_img_mode", text="模式")
                     layout.prop(props, "place_img_opacity", text="不透明度", slider=True)

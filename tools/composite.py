@@ -100,7 +100,10 @@ class CompositeTool(BaseTool):
 
     @staticmethod
     def draw_panel(layout, props):
-        layout.prop(props, "composite_fg", text="前景图")
+        row = layout.row(align=True)
+        row.prop(props, "composite_fg", text="前景图")
+        op = row.operator("image_editor_tools.clipboard_paste_to_prop", text="", icon='PASTEDOWN')
+        op.target_prop = "composite_fg"
         if props.composite_fg is None:
             layout.label(text="请选择一幅前景图", icon='INFO')
         else:

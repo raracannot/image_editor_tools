@@ -35,7 +35,10 @@ class ColorTransferTool(BaseTool):
 
     @staticmethod
     def draw_panel(layout, props):
-        layout.prop(props, "color_transfer_ref", text="参考图")
+        row = layout.row(align=True)
+        row.prop(props, "color_transfer_ref", text="参考图")
+        op = row.operator("image_editor_tools.clipboard_paste_to_prop", text="", icon='PASTEDOWN')
+        op.target_prop = "color_transfer_ref"
         if props.color_transfer_ref is None:
             layout.label(text="请选择一幅参考图", icon='INFO')
         else:
