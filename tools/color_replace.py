@@ -136,18 +136,12 @@ def _replace_hue(np_array, target_rgb, replace_rgb, tolerance, preserve_light):
     sat_match = s > 0.05
     alpha = np.where(hue_match & sat_match, 1.0, 0.0).astype(np.float32)
 
-    dh = _hue_distance(h, replace_h)
-    if dh < 0.5:
-        h_new = replace_h
-    else:
-        h_new = h
-
     if preserve_light:
-        result_rgb = np_hsv_to_rgb(np.where(alpha > 0, h_new, h),
+        result_rgb = np_hsv_to_rgb(np.where(alpha > 0, replace_h, h),
                                    np.where(alpha > 0, replace_s, s),
                                    np.where(alpha > 0, np.clip(v * (replace_v / max(v.mean(), 0.001)), 0, 1), v))
     else:
-        result_rgb = np_hsv_to_rgb(np.where(alpha > 0, h_new, h),
+        result_rgb = np_hsv_to_rgb(np.where(alpha > 0, replace_h, h),
                                    np.where(alpha > 0, replace_s, s),
                                    np.where(alpha > 0, replace_v, v))
 
