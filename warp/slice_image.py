@@ -7,7 +7,7 @@ from gpu_extras.batch import batch_for_shader
 from ..engine_base import BaseEngine
 from .. import state
 from ..translation import pget_tmpl
-from ..np_img_utils import blimg_2_npimg, npimg_2_blimg
+from ..utils.np_img_utils import blimg_2_npimg, npimg_2_blimg
 
 
 SNAP_STEP = 0.1
