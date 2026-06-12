@@ -175,27 +175,6 @@ class IMAGE_OT_tool_save_as(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class IMAGE_OT_clipboard_paste_to_prop(bpy.types.Operator):
-    bl_idname = "image_editor_tools.clipboard_paste_to_prop"
-    bl_label = ""
-    bl_description = "从剪贴板导入图像"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    target_prop: bpy.props.StringProperty()
-
-    def execute(self, context):
-        try:
-            from ..utils.clipboard_image import import_image_from_clipboard
-            img = import_image_from_clipboard()
-            if img is None:
-                self.report({'WARNING'}, "剪贴板中无有效图像")
-                return {'CANCELLED'}
-            setattr(context.scene.image_editor_tools, self.target_prop, img)
-            self.report({'INFO'}, f"已导入: {img.name}")
-        except Exception as e:
-            self.report({'ERROR'}, f"剪贴板导入失败: {e}")
-            return {'CANCELLED'}
-        return {'FINISHED'}
 
 
 classes = [
@@ -203,5 +182,4 @@ classes = [
     IMAGE_OT_tool_cancel,
     IMAGE_OT_tool_save,
     IMAGE_OT_tool_save_as,
-    IMAGE_OT_clipboard_paste_to_prop,
 ]

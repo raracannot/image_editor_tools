@@ -13,16 +13,13 @@ bl_info = {
 import bpy
 import traceback
 from . import warp
+from . import ops
 from . import state
 from . import translation
 from .tools import TOOLS, operator_classes, PreviewEngine
 
 
 class IMAGEEDITOR_TOOLS_PG_Properties(bpy.types.PropertyGroup):
-    ui_color: bpy.props.BoolProperty(default=True)
-    ui_filter: bpy.props.BoolProperty(default=True)
-    ui_texture: bpy.props.BoolProperty(default=True)
-    ui_warp: bpy.props.BoolProperty(default=True)
     place_img_fg: bpy.props.PointerProperty(
         name="前景图", type=bpy.types.Image,
         description="用于置入叠加的前景图像",
@@ -72,12 +69,13 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         props = context.scene.image_editor_tools
+        prefs = _get_prefs(context)
 
         # ── 色调调整 ──
         box = layout.box()
         row = box.row(align=True)
-        row.prop(props, "ui_color", text="色调调整", icon='TRIA_DOWN' if props.ui_color else 'TRIA_RIGHT', emboss=False)
-        if props.ui_color:
+        row.prop(prefs, "ui_color", text="色调调整", icon='TRIA_DOWN' if prefs.ui_color else 'TRIA_RIGHT', emboss=False)
+        if prefs.ui_color:
             col = box.column(align=True)
             op = col.operator("image_editor_tools.tool_start", text="基础调色器", icon='COLOR')
             op.tool_id = 'color'
@@ -99,8 +97,8 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
         # ── 滤镜效果 ──
         box = layout.box()
         row = box.row(align=True)
-        row.prop(props, "ui_filter", text="滤镜效果", icon='TRIA_DOWN' if props.ui_filter else 'TRIA_RIGHT', emboss=False)
-        if props.ui_filter:
+        row.prop(prefs, "ui_filter", text="滤镜效果", icon='TRIA_DOWN' if prefs.ui_filter else 'TRIA_RIGHT', emboss=False)
+        if prefs.ui_filter:
             col = box.column(align=True)
             op = col.operator("image_editor_tools.tool_start", text="模糊", icon='MATSHADERBALL')
             op.tool_id = 'blur'
@@ -128,13 +126,15 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
         # ── 贴图处理 ──
         box = layout.box()
         row = box.row(align=True)
-        row.prop(props, "ui_texture", text="贴图处理", icon='TRIA_DOWN' if props.ui_texture else 'TRIA_RIGHT', emboss=False)
-        if props.ui_texture:
+        row.prop(prefs, "ui_texture", text="贴图处理", icon='TRIA_DOWN' if prefs.ui_texture else 'TRIA_RIGHT', emboss=False)
+        if prefs.ui_texture:
             col = box.column(align=True)
             op = col.operator("image_editor_tools.tool_start", text="法线生成", icon='NORMALS_FACE')
             op.tool_id = 'normal'
             op = col.operator("image_editor_tools.tool_start", text="法线还原高度", icon='MESH_GRID')
             op.tool_id = 'height_from_normal'
+            op = col.operator("image_editor_tools.tool_start", text="法线转换", icon='NORMALS_FACE')
+            op.tool_id = 'normal_convert'
             op = col.operator("image_editor_tools.tool_start", text="高度→AO", icon='SHADING_SOLID')
             op.tool_id = 'height_to_ao'
             op = col.operator("image_editor_tools.tool_start", text="曲率图", icon='CURVE_DATA')
@@ -146,6 +146,8 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             op.tool_id = 'rebuild_alpha'
             op = col.operator("image_editor_tools.tool_start", text="图像合成", icon='NODE_COMPOSITING')
             op.tool_id = 'composite'
+            op = col.operator("image_editor_tools.tool_start", text="均匀光影", icon='LIGHT')
+            op.tool_id = 'relight'
             op = col.operator("image_editor_tools.tool_start", text="通道修改", icon='TEXTURE')
             op.tool_id = 'channel'            
 
@@ -153,8 +155,8 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
         # ── 几何变形 ──
         box = layout.box()
         row = box.row(align=True)
-        row.prop(props, "ui_warp", text="几何变形", icon='TRIA_DOWN' if props.ui_warp else 'TRIA_RIGHT', emboss=False)
-        if props.ui_warp:
+        row.prop(prefs, "ui_warp", text="几何变形", icon='TRIA_DOWN' if prefs.ui_warp else 'TRIA_RIGHT', emboss=False)
+        if prefs.ui_warp:
             col = box.column(align=True)
             op = col.operator("image_editor_tools.mesh_warp_modal", text="贝塞尔扭曲", icon='MOD_LATTICE')
             op = col.operator("image_editor_tools.perspective_warp_modal", text="透视形变", icon='MESH_GRID')
@@ -219,8 +221,53 @@ class IMAGEEDITOR_TOOLS_PT_ToolPanel(bpy.types.Panel):
         row.operator("image_editor_tools.tool_save_as", text="另存", icon='DUPLICATE')
 
 
+class IMAGEEDITOR_TOOLS_Preferences(bpy.types.AddonPreferences):
+    bl_idname = __package__
+
+    ui_color: bpy.props.BoolProperty(
+        name="色调调整", default=True,
+        description="在工具面板中展开色调调整分类",
+    )
+    ui_filter: bpy.props.BoolProperty(
+        name="滤镜效果", default=True,
+        description="在工具面板中展开滤镜效果分类",
+    )
+    ui_texture: bpy.props.BoolProperty(
+        name="贴图处理", default=True,
+        description="在工具面板中展开贴图处理分类",
+    )
+    ui_warp: bpy.props.BoolProperty(
+        name="几何变形", default=True,
+        description="在工具面板中展开几何变形分类",
+    )
+    show_node_menu: bpy.props.BoolProperty(
+        name="节点编辑器右键菜单",
+        description="当在节点编辑器里，选中图像节点时，右键菜单会增加一个快速跳转并修改图像的按钮",
+        default=True,
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="面板分类（默认展开）", icon='COLLAPSEMENU')
+        row = layout.row(align=True)
+        row.prop(self, "ui_color")
+        row.prop(self, "ui_filter")
+        row = layout.row(align=True)
+        row.prop(self, "ui_texture")
+        row.prop(self, "ui_warp")
+        layout.separator()
+        row = layout.row(align=True)
+        row.prop(self, "show_node_menu")
+        row.label(text="当在节点编辑器里，选中图像节点时，右键菜单会增加一个快速跳转并修改图像的按钮")
+
+
+def _get_prefs(context):
+    return context.preferences.addons[__package__].preferences
+
+
 classes = [
     IMAGEEDITOR_TOOLS_PG_Properties,
+    IMAGEEDITOR_TOOLS_Preferences,
     IMAGEEDITOR_TOOLS_PT_MainPanel,
     IMAGEEDITOR_TOOLS_PT_ToolPanel,
 ] + operator_classes
@@ -239,6 +286,7 @@ def register():
             type=IMAGEEDITOR_TOOLS_PG_Properties
         )
         warp.register()
+        ops.register()
     except Exception:
         traceback.print_exc()
         raise
@@ -248,6 +296,10 @@ def unregister():
     state.current_tool = 'NONE'
     try:
         translation.unregister()
+    except Exception:
+        pass
+    try:
+        ops.unregister()
     except Exception:
         pass
     try:

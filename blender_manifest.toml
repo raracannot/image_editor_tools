@@ -7,6 +7,22 @@ tagline = "Super Image Toolbox (color, filters, texture optimization)"
 license = ["SPDX:GPL-3.0-or-later"]
 maintainer = "RARA"
 type = "add-on"
-website = "https://space.bilibili.com/27284213"
+website = "https://github.com/raracannot/image_editor_tools"
 copyright = ["2026 RARA"]
-tags = ["Paint", "Compositing", "Material"]
+tags = ["Paint", "Compositing"]
+
+[permissions]
+files = "Read image from disk"
+clipboard = "Copy image from clipboard"
+
+[build]
+paths_exclude_pattern = [
+    "__pycache__/",
+    ".git/",
+    ".opencode/",
+    "*.zip",
+    ".gitignore",
+    ".gitattributes",
+    "CHANGELOG.md",
+    "README.md",
+]

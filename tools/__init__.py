@@ -34,6 +34,8 @@ from .levels import LevelsTool
 from .channel_mixer import ChannelMixerTool
 from .channel import ChannelTool
 from .texture import HeightToAOTool, CurvatureTool
+from .relight import RelightTool
+from .normal_convert import NormalConvertTool
 from .operators import classes as operator_classes
 
 TOOLS = {
@@ -64,4 +66,6 @@ TOOLS = {
     'channel': ChannelTool,
     'height_to_ao': HeightToAOTool,
     'curvature': CurvatureTool,
+    'relight': RelightTool,
+    'normal_convert': NormalConvertTool,
 }
