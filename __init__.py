@@ -2,12 +2,13 @@
 
 bl_info = {
     "name": "Image Editor Master [图像超级工具]",
-    "author": "RARA",
-    "version": (0, 3, 4),
+    "author": "RARA[来一点咖啡吗]",
+    "version": (0, 3, 5),
     "blender": (4, 2, 0),
+    'doc_url': 'https://space.bilibili.com/27284213',
     "location": "Image Editor > Sidebar(N-Panel) > Tool",
     "description": "Super Image Toolbox (color, filters, texture optimization)",
-    "category": "Image",
+    "category": "Tool",
 }
 
 import bpy

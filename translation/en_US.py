@@ -143,6 +143,7 @@ data = {
     "锐化强度": "Sharpen Amount",
     "反转绿色通道": "Invert Green Channel",
     "方法": "Method",
+    "样式": "Style",
     "混合宽度": "Blend Width",
     "重叠宽度": "Overlap Width",
     "梯度惩罚": "Gradient Penalty",
@@ -285,6 +286,14 @@ data = {
     "sRGB→线性": "sRGB→Linear",
     "高度图": "Height Map",
     "法线贴图": "Normal Map",
+    "黑底白点": "Black Base, White Dots",
+    "白底黑点": "White Base, Black Dots",
+    "彩底白点": "Color Base, White Dots",
+    "彩底黑点": "Color Base, Black Dots",
+    "白底彩点": "White Base, Color Dots",
+    "黑底彩点": "Black Base, Color Dots",
+    "透明底彩点": "Transparent Base, Color Dots",
+    "彩底透明点": "Color Base, Transparent Dots",
 
     # ====== Enum item descriptions ======
     "基于积分图的快速盒式模糊": "Fast box blur using integral images",
@@ -316,6 +325,15 @@ data = {
     "强制将sRGB数据转为线性 (修复色彩空间标签错误)": "Force convert sRGB data to linear (fix color space tag mismatch)",
     "从灰度贴图计算": "Calculate from grayscale height map",
     "从法线贴图计算": "Calculate from normal map",
+    "网点与底色的组合方式": "Dot and background color combination",
+    "暗处大点": "Larger dots in dark areas",
+    "亮处大点": "Larger dots in bright areas",
+    "原图为底，暗处叠加白色网点": "Original color base, white dots in dark areas",
+    "原图为底，亮处叠加黑色网点": "Original color base, black dots in bright areas",
+    "白底上以原图色画点，暗处大点": "White base, original color dots, larger in dark areas",
+    "黑底上以原图色画点，亮处大点": "Black base, original color dots, larger in bright areas",
+    "透明底上以原图色画点，暗处大点": "Transparent base, original color dots, larger in dark areas",
+    "原图为底，亮处挖透明孔": "Original color base, transparent holes in bright areas",
 
     # ====== Colors ======
     "红色": "Red",
@@ -354,6 +372,8 @@ data = {
 
     # ====== status_text_set ======
     "贝塞尔扭曲: 拖拽控制点 | P填色 | F重置 | Enter应用 | Esc取消": "Mesh Warp: Drag points | P=fill | F=reset | Enter=apply | Esc=cancel",
+    "贝塞尔扭曲: 【1. 布局】摆放网格 | L切换 | P填色 | F重置 | Enter应用 | Esc取消": "Mesh Warp: [1. Layout] Place grid | L=mode | P=fill | F=reset | Enter=apply | Esc=cancel",
+    "贝塞尔扭曲: 【2. 变形】拖拽控制点 | L切换 | P填色 | F重置 | Enter应用 | Esc取消": "Mesh Warp: [2. Warp] Drag points | L=mode | P=fill | F=reset | Enter=apply | Esc=cancel",
     "自由裁切: 拖拽边角/旋转 | P填色 | F重置 | Enter应用 | Esc取消": "Free Crop: Drag corners/rotate | P=fill | F=reset | Enter=apply | Esc=cancel",
     "透视形变: L切换模式 | P填色 | F重置 | Enter应用 | Esc取消": "Perspective Warp: L=mode | P=fill | F=reset | Enter=apply | Esc=cancel",
     "置入图像: 拖拽移动 | 角点缩放 | 旋转 [Shift吸附] | Enter应用 | Esc取消": "Place Image: Drag to move | Corner to scale | Rotate [Shift snap] | Enter=apply | Esc=cancel",
@@ -408,6 +428,7 @@ data = {
 
     # ====== Combined HUD texts (complete) ======
     "网格变形 (GPU烘焙) | 拖拽控制点 | 填充: {pad} [P切换] | F 重置 | Enter 应用 | Esc 取消": "Mesh Warp (GPU) | Drag points | Fill: {pad} [P] | F=Reset | Enter=Apply | Esc=Cancel",
+    "{mode} | 填充: {pad} [P切换] | L 切换模式 | F 重置 | Enter 应用 | Esc 取消": "{mode} | Fill: {pad} [P] | L=Mode | F=Reset | Enter=Apply | Esc=Cancel",
     "自由裁切 | 拖拽边缘 | 旋转 ({angle}°) [Shift吸附] | 填充: {mode} [按P切换] | F填满 | Enter应用 | Esc取消": "Free Crop | Drag edges | Rotate ({angle}°) [Shift snap] | Fill: {mode} [P] | F=Fill | Enter=Apply | Esc=Cancel",
     "{mode} | 填充: {pad} [P切换] | L 切换模式 | F 重置 | Enter 应用 | Esc 取消": "{mode} | Fill: {pad} [P] | L=Mode | F=Reset | Enter=Apply | Esc=Cancel",
     "置入图像 | 拖拽移动 | 角点缩放 | 旋转 ({angle}°) [Shift吸附] | Enter应用 | Esc取消": "Place Image | Drag to move | Corner to scale | Rotate ({angle}°) [Shift snap] | Enter=Apply | Esc=Cancel",

@@ -46,6 +46,7 @@ class MeshWarpEngine(BaseEngine):
         self.padding_mode = self.padding_modes[self.padding_mode_idx]
 
         self._drag_idx = -1
+        self.mode = 'LAYOUT'
 
         super().__init__(context, image)
 
@@ -101,7 +102,11 @@ class MeshWarpEngine(BaseEngine):
         self.padding_mode = self.padding_modes[self.padding_mode_idx]
 
     def reset_transform(self):
-        self.tgt_pts = self._generate_grid()
+        if self.mode == 'LAYOUT':
+            self.src_pts = self._generate_grid()
+            self.tgt_pts = self._generate_grid()
+        else:
+            self.tgt_pts = [list(pt) for pt in self.src_pts]
         self.update_preview_mesh()
 
     def handle_mouse_press(self, event):
@@ -125,8 +130,13 @@ class MeshWarpEngine(BaseEngine):
         ox, oy, dw, dh = self._img_rect
 
         if dw > 0 and dh > 0:
-            self.tgt_pts[self._drag_idx][0] = (mx - ox) / dw
-            self.tgt_pts[self._drag_idx][1] = (my - oy) / dh
+            nx = (mx - ox) / dw
+            ny = (my - oy) / dh
+            if self.mode == 'LAYOUT':
+                self.src_pts[self._drag_idx] = [nx, ny]
+                self.tgt_pts[self._drag_idx] = [nx, ny]
+            else:
+                self.tgt_pts[self._drag_idx] = [nx, ny]
             self.update_preview_mesh()
         return True
 
@@ -155,7 +165,10 @@ class MeshWarpEngine(BaseEngine):
 
         line_shader = gpu.shader.from_builtin('UNIFORM_COLOR')
         line_shader.bind()
-        line_shader.uniform_float("color", (1.0, 1.0, 1.0, 0.5))
+        if self.mode == 'LAYOUT':
+            line_shader.uniform_float("color", (0.2, 0.8, 1.0, 0.7))
+        else:
+            line_shader.uniform_float("color", (1.0, 0.2, 0.2, 0.7))
 
         lines = []
         gs = self.grid_size
@@ -185,6 +198,8 @@ class MeshWarpEngine(BaseEngine):
             s = h_size * 1.5 if i == self._drag_idx else h_size
             if i == self._drag_idx:
                 point_shader.uniform_float("color", (1.0, 0.2, 0.2, 1.0))
+            elif self.mode == 'LAYOUT':
+                point_shader.uniform_float("color", (0.2, 0.8, 1.0, 1.0))
             else:
                 point_shader.uniform_float("color", (1.0, 0.8, 0.2, 1.0))
 
@@ -197,9 +212,10 @@ class MeshWarpEngine(BaseEngine):
         blf.color(font_id, 0.9, 0.9, 0.9, 1.0)
         mode_names = {'TRANSPARENT': '透明', 'WHITE': '白底', 'BLACK': '黑底'}
         pad_str = mode_names.get(self.padding_mode, self.padding_mode)
+        mode_str = "【1. 布局】摆放网格" if self.mode == 'LAYOUT' else "【2. 变形】拖拽控制点"
         text = pget_tmpl(
-            "网格变形 (GPU烘焙) | 拖拽控制点 | 填充: {pad} [P切换] | F 重置 | Enter 应用 | Esc 取消",
-            pad=pad_str,
+            "{mode} | 填充: {pad} [P切换] | L 切换模式 | F 重置 | Enter 应用 | Esc 取消",
+            mode=mode_str, pad=pad_str,
         )
         blf.position(font_id, x0, y0 - 25, 0)
         blf.draw(font_id, text)
@@ -322,7 +338,7 @@ class IMAGE_OT_mesh_warp_modal(WarpModalBase):
     engine_class = MeshWarpEngine
     tool_key = 'warp:贝塞尔扭曲'
     tool_label = '贝塞尔扭曲'
-    status_text = "贝塞尔扭曲: 拖拽控制点 | P填色 | F重置 | Enter应用 | Esc取消"
+    status_text = "贝塞尔扭曲: 【1. 布局】摆放网格 | L切换 | P填色 | F重置 | Enter应用 | Esc取消"
 
     def _custom_keys(self, context, event, engine):
         if event.type == 'P' and event.value == 'PRESS':
@@ -330,5 +346,14 @@ class IMAGE_OT_mesh_warp_modal(WarpModalBase):
             return True
         if event.type == 'F' and event.value == 'PRESS':
             engine.reset_transform()
+            return True
+        if event.type == 'L' and event.value == 'PRESS':
+            engine.mode = 'WARP' if engine.mode == 'LAYOUT' else 'LAYOUT'
+            engine.update_preview_mesh()
+            context.workspace.status_text_set(
+                "贝塞尔扭曲: 【2. 变形】拖拽控制点 | L切换 | P填色 | F重置 | Enter应用 | Esc取消"
+                if engine.mode == 'WARP' else
+                "贝塞尔扭曲: 【1. 布局】摆放网格 | L切换 | P填色 | F重置 | Enter应用 | Esc取消"
+            )
             return True
         return False

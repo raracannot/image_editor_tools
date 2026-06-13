@@ -173,6 +173,8 @@ class PlaceImageEngine(BaseEngine):
     def handle_mouse_press(self, event):
         mx, my = event.mouse_region_x, event.mouse_region_y
         self._drag_mode = self._get_hit_zone(mx, my)
+        if self._drag_mode == 'NONE':
+            return False
         self._drag_start_pos = (mx, my)
         self._drag_start_offset = (self.offset_x, self.offset_y)
         self._drag_start_scale = self.scale
