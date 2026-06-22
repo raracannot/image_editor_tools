@@ -1,0 +1,233 @@
+﻿context,context_label,chinese,english,source_file:line
+property_desc,属性描述,0=原图，1=完全迁移,"0=original, 1=fully transferred",tools\color_transfer.py:25
+property_name,属性名,A 源,A Source,tools\channel.py:56
+property_desc,属性描述,AO 强度倍数,AO intensity multiplier,tools\texture.py:22
+property_name,属性名,B 源,B Source,tools\channel.py:53
+property_name,属性名,B 通道,Blue Channel,tools\invert.py:25; tools\invert.py:35
+property_name,属性名,G 源,G Source,tools\channel.py:50
+property_name,属性名,G 通道,Green Channel,tools\invert.py:20; tools\invert.py:34
+property_desc,属性描述,OpenGL (Y+) ⇄ DirectX (Y-) 法线格式切换,OpenGL (Y+) ⇄ DirectX (Y-) normal format switch,tools\height_from_normal.py:16
+property_name,属性名,R 源,R Source,tools\channel.py:47
+property_name,属性名,R 通道,Red Channel,tools\invert.py:15; tools\invert.py:33
+property_desc,属性描述,RGB 通道独立加噪，产生彩色噪点效果,"RGB channels get independent noise for color noise effect",tools\noise.py:35
+draw_label,Panel 标签,Sobel 算子，无参数,"Sobel operator, no parameters",tools\edge_detect.py:16
+property_desc,属性描述,USM 底层模糊的 σ 值,Underlying USM blur sigma value,tools\sharpen.py:16
+button_text,Operator 按钮文本,USM锐化,USM Sharpen,__init__.py:108; __init__.py:108
+error_prefix,错误前缀,[切分图像],[Slice Image],warp\slice_image.py:198
+error_prefix,错误前缀,[图像编辑工具集],[Image Editor Tools],engine_base.py:28
+error_prefix,错误前缀,[置入图像],[Place Image],warp\place_image.py:278; warp\place_image.py:296
+error_prefix,错误前缀,[自由裁切],[Free Crop],warp\free_crop.py:449; warp\free_crop.py:463
+error_prefix,错误前缀,[贝塞尔扭曲],[Mesh Warp],warp\bezier_warp.py:259; warp\bezier_warp.py:327
+error_prefix,错误前缀,[透视形变],[Perspective Warp],warp\perspective_warp.py:52; warp\perspective_warp.py:336; warp\perspective_warp.py:353
+draw_label,Panel 标签,"alpha = max(R,G,B) 重建透明通道","alpha = max(R,G,B) rebuild transparency",tools\rebuild_alpha.py:14
+hud_text,GPU HUD 文本,{mode}(双击切换),{mode} (double-click to switch),tools\preview_engine.py:154
+property_name,属性名,不透明度,Opacity,__init__.py:43; __init__.py:201; tools\composite.py:71
+button_text,Operator 按钮文本,中文,,scripts\extract_translations.py:63; scripts\extract_translations.py:77; scripts\extract_translations.py:96; scripts\extract_translations.py:100; scripts\extract_translations.py:124
+property_name,属性名,中间调,Midtones,tools\levels.py:25; tools\levels.py:47
+property_name,属性名,位深,Bit Depth,tools\depth.py:25
+button_text,Operator 按钮文本,位移,Offset,__init__.py:114; __init__.py:114
+button_text,Operator 按钮文本,保存,Save,__init__.py:221; __init__.py:221; tools\operators.py:163
+property_name,属性名,保持原始明度,Preserve Original Luminance,tools\relight.py:71; tools\relight.py:88
+property_name,属性名,保持明度,Preserve Luminance,tools\color.py:60; tools\color.py:103
+property_name,属性名,保留细节,Preserve Details,tools\denoise.py:25; tools\denoise.py:40
+property_name,属性名,偏移,Offset,tools\color.py:40; tools\color.py:94
+property_desc,属性描述,像素块尺寸,Pixel block size,tools\mosaic.py:16
+property_desc,属性描述,先缩到 1/2 做晶格化再还原，大幅加速,"Scale to 1/2 for crystallization then restore, significantly faster",tools\crystallize.py:26
+property_desc,属性描述,先缩到 1/2 做模糊再还原，大幅加速,"Scale to 1/2 for blur then restore, significantly faster",tools\blur.py:61
+property_name,属性名,全局羽化,Global Feather,tools\mixer.py:43
+button_text,Operator 按钮文本,减少杂色,Denoise,__init__.py:122; __init__.py:122
+property_name,属性名,几何变形,Geometric Warp,__init__.py:159
+button_text,Operator 按钮文本,切分图像,Slice Image,__init__.py:166; __init__.py:166; warp\slice_image.py:196; warp\slice_image.py:205
+hud_text,GPU HUD 文本,切分图像 | 拖拽分割线 | Shift 吸附 | 纵:{cols} 横:{rows} | Enter 应用 | Esc 取消,Slice Image | Drag lines | Shift snap | Cols:{cols} Rows:{rows} | Enter=Apply | Esc=Cancel,warp\slice_image.py:109
+property_desc,属性描述,前景不透明度,Foreground opacity,tools\composite.py:50
+property_name,属性名,前景图,Foreground Image,__init__.py:25; __init__.py:196; tools\composite.py:64
+report,报告消息,剪贴板中无有效图像,No valid image in clipboard,ops\__init__.py:158
+property_name,属性名,半径,Radius,tools\texture.py:15
+property_desc,属性描述,半球采样方向数 (越大越精确越慢),"Hemisphere sample directions (more = better quality, slower)",tools\texture.py:26
+property_name,属性名,单色,Monochrome,tools\channel_mixer.py:18; tools\channel_mixer.py:40
+property_desc,属性描述,去条带=源位深(越低越激进) / 仿色=目标位深,Deband=source depth (lower=more aggressive) / Dither=target depth,tools\depth.py:26
+property_name,属性名,参考图,Reference Image,tools\color_transfer.py:18; tools\color_transfer.py:39
+button_text,Operator 按钮文本,反相,Invert,__init__.py:95; __init__.py:95
+property_desc,属性描述,反转法线Y方向（切换凹凸方向感知）,Invert normal Y direction (swap bump perception),tools\normal.py:37
+property_name,属性名,反转绿色通道,Invert Green Channel,tools\normal.py:36
+button_text,Operator 按钮文本,取消,Cancel,__init__.py:210; __init__.py:210; __init__.py:220; __init__.py:220; tools\operators.py:150; warp\__init__.py:23
+button_text,Operator 按钮文本,另存,Save As,__init__.py:212; __init__.py:212; __init__.py:222; __init__.py:222; tools\operators.py:176; warp\__init__.py:47
+button_text,Operator 按钮文本,启动编辑工具,Start Edit Tool,tools\operators.py:9
+button_text,Operator 按钮文本,噪点,Noise,__init__.py:110; __init__.py:110
+property_desc,属性描述,噪点强度,"Noise intensity",tools\noise.py:28
+property_desc,属性描述,噪点是否同时影响 Alpha 通道,Whether noise also affects the alpha channel,tools\noise.py:47
+property_desc,属性描述,噪点生成算法,Noise generation algorithm,tools\noise.py:16
+property_name,属性名,噪点类型,Noise Type,tools\noise.py:15
+property_desc,属性描述,固定随机种子以获得可复现的噪点图案 (0=每次随机),Fixed seed for reproducible noise pattern (0=random each time),tools\noise.py:41
+property_name,属性名,图 A,Image A,tools\channel.py:44
+property_name,属性名,图 B,Image B,tools\channel.py:41
+property_name,属性名,图 G,Image G,tools\channel.py:38
+property_name,属性名,图 R,Image R,tools\channel.py:35
+button_text,Operator 按钮文本,图像合成,Composite,__init__.py:148; __init__.py:148
+button_text,Operator 按钮文本,图像编辑工具集,Image Editor Tools,__init__.py:57
+property_desc,属性描述,图像边缘外像素的填充方式,Fill mode for pixels outside image boundary,tools\blur.py:50
+button_text,Operator 按钮文本,在内部图像编辑器中编辑,Edit in Internal Image Editor,ops\__init__.py:177
+button_text,Operator 按钮文本,在内部编辑器打开图像,Open Image in Internal Editor,ops\__init__.py:68
+property_desc,属性描述,在工具面板中展开几何变形分类,Expand Geometric Warp category in tool panel,__init__.py:242
+property_desc,属性描述,在工具面板中展开滤镜效果分类,Expand Filter Effects category in tool panel,__init__.py:234
+property_desc,属性描述,在工具面板中展开色调调整分类,Expand Color Adjustment category in tool panel,__init__.py:230
+property_desc,属性描述,在工具面板中展开贴图处理分类,Expand Texture Processing category in tool panel,__init__.py:238
+button_text,Operator 按钮文本,均匀光影,Uniform Lighting,__init__.py:150; __init__.py:150
+property_name,属性名,垂直,Vertical,tools\offset.py:36; tools\offset.py:52
+property_desc,属性描述,垂直位移比例,Vertical offset ratio,tools\offset.py:37
+property_desc,属性描述,基础光影层的生成方式,How the base lighting layer is generated,tools\relight.py:32
+button_text,Operator 按钮文本,基础调色器,Basic Color,__init__.py:81; __init__.py:81
+property_name,属性名,基色,Base Color,tools\relight.py:50; tools\relight.py:85
+property_desc,属性描述,基色层替换的颜色分量,Which color components the base layer replaces,tools\relight.py:56
+property_desc,属性描述,基色层模糊强度（强模糊模式）,Base layer blur strength (Heavy Blur mode),tools\relight.py:43
+property_name,属性名,基色模式,Base Color Mode,tools\relight.py:31; tools\relight.py:81
+hud_text,GPU HUD 文本,填充: {pad} [P切换],Fill: {pad} [P to switch],translation\__init__.py:115
+draw_label,Panel 标签,增强,Enhancement,tools\color.py:113
+property_name,属性名,对比度,Contrast,tools\color.py:79; tools\color.py:116
+button_text,Operator 按钮文本,工具面板,Tool Panel,__init__.py:170
+draw_label,Panel 标签,常数,Constant,tools\channel_mixer.py:46; tools\channel_mixer.py:59
+button_text,Operator 按钮文本,应用,Apply,__init__.py:211; __init__.py:211; warp\__init__.py:35
+property_name,属性名,强度,Strength,tools\denoise.py:15; tools\denoise.py:39; tools\emboss.py:28; tools\noise.py:56
+property_desc,属性描述,当在节点编辑器里，选中图像节点时，右键菜单会增加一个快速跳转并修改图像的按钮,"When an image node is selected in the node editor, the right-click menu will show a shortcut to open and edit the image",__init__.py:246; __init__.py:262
+property_name,属性名,彩色噪点,Color Noise,tools\noise.py:34; tools\noise.py:57
+property_name,属性名,影响 Alpha,Affect Alpha,tools\noise.py:46; tools\noise.py:59
+property_name,属性名,快速模式,Fast Mode,tools\crystallize.py:25
+property_name,属性名,快速模糊,Fast Blur,tools\blur.py:60
+draw_label,Panel 标签,打破已固化的量化边界,Break solidified quantization boundaries,tools\depth.py:41
+property_name,属性名,抗锯齿,Anti-alias,tools\halftone.py:38; tools\halftone.py:64
+property_desc,属性描述,拼接重叠区域占图像的比例,Overlap region ratio relative to image,tools\seamless.py:37
+property_desc,属性描述,控制保留细节的尺度，值越大保留更大尺度的结构,Controls detail scale; higher values preserve larger structures,tools\high_pass.py:16
+property_desc,属性描述,控制分离光影的尺度，值越大去除越粗的光影,Controls lighting separation scale; higher values remove coarser lighting,tools\relight.py:25
+property_desc,属性描述,控制随机采样点数量，越多越接近原图,Controls random sample count; more samples = closer to original,tools\crystallize.py:16
+property_desc,属性描述,"方向模糊的角度 (-180~180, 0=水平)","Directional blur angle (-180~180, 0=horizontal)",tools\blur.py:40
+property_name,属性名,方法,Method,tools\seamless.py:15
+property_desc,属性描述,无缝化算法,Seamless algorithm,tools\seamless.py:16
+property_name,属性名,明度,Lightness,tools\color.py:71; tools\color.py:110; tools\mixer.py:72
+button_text,Operator 按钮文本,晶格化,Crystallize,__init__.py:118; __init__.py:118
+property_name,属性名,晶格数量,Cell Count,tools\crystallize.py:15
+property_name,属性名,曝光,Exposure,tools\color.py:93
+property_name,属性名,曝光度,Exposure,tools\color.py:36; tools\color.py:91
+button_text,Operator 按钮文本,曲率图,Curvature,__init__.py:141; __init__.py:141
+property_desc,属性描述,曲率计算半径 (像素),Curvature calculation radius (pixels),tools\texture.py:77
+property_name,属性名,替换范围,Replacement Range,tools\relight.py:55; tools\relight.py:86
+property_desc,属性描述,最大网点半径,Maximum dot radius,tools\halftone.py:28
+report,报告消息,未在选中节点中找到任何图像对象,No image found in selected nodes,ops\__init__.py:75
+property_name,属性名,来源,Source,tools\channel.py:78
+property_name,属性名,样式,Style,tools\halftone.py:43; tools\halftone.py:65
+property_name,属性名,格子大小,Cell Size,tools\mosaic.py:15; tools\mosaic.py:28
+property_name,属性名,梯度惩罚,Gradient Penalty,tools\seamless.py:47
+property_name,属性名,模式,Mode,__init__.py:200; tools\composite.py:70
+button_text,Operator 按钮文本,模糊,Blur,__init__.py:104; __init__.py:104
+property_name,属性名,模糊半径,Blur Radius,tools\blur.py:15; tools\relight.py:83
+property_desc,属性描述,模糊强度 (0-100),Blur strength (0-100),tools\blur.py:16
+property_name,属性名,模糊模式,Blur Mode,tools\blur.py:26
+property_desc,属性描述,模糊算法,Blur algorithm,tools\blur.py:27
+property_name,属性名,模糊角度,Blur Angle,tools\blur.py:39
+property_name,属性名,横向,Rows,__init__.py:207
+property_name,属性名,横向分割数,Horizontal Divisions,__init__.py:51
+property_desc,属性描述,横向分割线数量,Number of horizontal split lines,__init__.py:52
+property_name,属性名,水平,Horizontal,tools\offset.py:25; tools\offset.py:51
+property_desc,属性描述,水平位移比例,Horizontal offset ratio,tools\offset.py:26
+property_desc,属性描述,法线凹凸强度,Normal bump strength,tools\normal.py:16
+button_text,Operator 按钮文本,法线生成,Normal,__init__.py:133; __init__.py:133
+button_text,Operator 按钮文本,法线转换,Normal Convert,__init__.py:137; __init__.py:137
+button_text,Operator 按钮文本,法线还原高度,Height From Normal,__init__.py:135; __init__.py:135
+draw_label,Panel 标签,注入TPDF噪声掩盖色阶,Inject TPDF noise to mask banding,tools\depth.py:43
+draw_label,Panel 标签,注：高级缝合可能裁切图像,Note: Advanced Seam may crop the image,tools\seamless.py:66
+property_name,属性名,洋红-绿色,Magenta-Green,tools\color.py:52; tools\color.py:101
+button_text,Operator 按钮文本,浮雕,Emboss,__init__.py:120; __init__.py:120
+property_desc,属性描述,浮雕凹凸强度,Emboss bump strength,tools\emboss.py:16
+property_name,属性名,混合,Blend,tools\color_transfer.py:24; tools\color_transfer.py:45
+property_name,属性名,混合宽度,Blend Width,tools\seamless.py:25
+property_name,属性名,混合强度,Blend Strength,tools\relight.py:66; tools\relight.py:87
+property_name,属性名,混合模式,Blend mode,__init__.py:29; tools\composite.py:43
+other,其他,混色器,Mixer,tools\mixer.py:36
+property_name,属性名,滤镜效果,Filter Effects,__init__.py:101
+property_name,属性名,灰度系数,Gamma,tools\color.py:44; tools\color.py:95
+property_desc,属性描述,用于叠加合成的前景图像,Foreground image for compositing,tools\composite.py:37
+property_desc,属性描述,用于置入叠加的前景图像,Foreground image for overlay placement,__init__.py:26
+property_desc,属性描述,用于迁移色彩风格的参考图像,Reference image for color style transfer,tools\color_transfer.py:19
+property_desc,属性描述,用原始亮度替换结果亮度，避免暗部裁切损失,Replace result luminance with original luminance to avoid shadow clipping loss,tools\relight.py:72
+property_name,属性名,白点,White Point,tools\levels.py:48; tools\levels.py:53
+property_name,属性名,纵向,Columns,__init__.py:206
+property_name,属性名,纵向分割数,Vertical Divisions,__init__.py:47
+property_desc,属性描述,纵向分割线数量,Number of vertical split lines,__init__.py:48
+property_name,属性名,细节,Detail,tools\normal.py:25; tools\normal.py:46
+property_name,属性名,细节强度,Detail Strength,tools\high_pass.py:25
+property_desc,属性描述,网屏角度,Screen angle,tools\halftone.py:33
+property_desc,属性描述,网点与底色的组合方式,Dot and background color combination,tools\halftone.py:44
+property_name,属性名,网点半径,Dot Radius,tools\halftone.py:27; tools\halftone.py:62
+button_text,Operator 按钮文本,置入图像,Place Image,__init__.py:165; __init__.py:165; warp\place_image.py:380
+hud_text,GPU HUD 文本,置入图像 | 拖拽移动 | 角点缩放 | 旋转 ({angle}°) [Shift吸附] | Enter应用 | Esc取消,Place Image | Drag to move | Corner to scale | Rotate ({angle}°) [Shift snap] | Enter=Apply | Esc=Cancel,warp\place_image.py:166
+undo_message,撤销消息,置入图像另存,Place Image Save As,warp\place_image.py:294
+property_name,属性名,翻转 G 通道,Flip G Channel,tools\height_from_normal.py:15; tools\height_from_normal.py:24
+property_name,属性名,自动归一化,Auto Normalize,tools\normal_convert.py:27; tools\normal_convert.py:37
+property_name,属性名,自然饱和度,Vibrance,tools\color.py:75; tools\color.py:115
+button_text,Operator 按钮文本,自由裁切,Free Crop,__init__.py:164; __init__.py:164; warp\free_crop.py:478
+undo_message,撤销消息,自由裁切另存,Free Crop Save As,warp\free_crop.py:447
+button_text,Operator 按钮文本,色彩半调,Halftone,__init__.py:124; __init__.py:124
+draw_label,Panel 标签,色彩平衡,Color Balance,tools\color.py:98
+button_text,Operator 按钮文本,色彩迁徙,Color Transfer,__init__.py:89; __init__.py:89
+button_text,Operator 按钮文本,色深优化,Depth Optimize,__init__.py:93; __init__.py:93
+property_desc,属性描述,色深处理模式,Bit depth processing mode,tools\depth.py:16
+property_name,属性名,色相,Hue,tools\color.py:63; tools\color.py:108; tools\mixer.py:70
+draw_label,Panel 标签,色相 / 饱和度,Hue / Saturation,tools\color.py:106
+button_text,Operator 按钮文本,色调分离,Posterize,__init__.py:91; __init__.py:91
+property_name,属性名,色调调整,Color Adjustment,__init__.py:78
+button_text,Operator 按钮文本,色阶,Levels,__init__.py:87; __init__.py:87
+property_name,属性名,色阶数,Level Count,tools\posterize.py:15; tools\posterize.py:28
+property_name,属性名,节点编辑器右键菜单,Node Editor Context Menu,__init__.py:245
+property_name,属性名,角度,Angle,tools\halftone.py:33; tools\halftone.py:63
+report,报告消息,请在图像编辑器中打开一张图片,Please open an image in the Image Editor,warp\base_op.py:80
+draw_label,Panel 标签,请选择一幅前景图,Please select a foreground image,__init__.py:203; tools\composite.py:68
+draw_label,Panel 标签,请选择一幅参考图,Please select a reference image,tools\color_transfer.py:43
+other,其他,调色,Color Adjust,tools\color.py:30
+button_text,Operator 按钮文本,贝塞尔扭曲,Mesh Warp,__init__.py:162; __init__.py:162; warp\bezier_warp.py:337
+undo_message,撤销消息,贝塞尔扭曲另存,Mesh Warp Save As,warp\bezier_warp.py:257
+property_name,属性名,贴图处理,Texture Processing,__init__.py:130
+button_text,Operator 按钮文本,贴图无缝化,Make Seamless,__init__.py:144; __init__.py:144
+property_desc,属性描述,越界像素处理方式,How out-of-range pixels are handled,tools\offset.py:16
+property_desc,属性描述,转换后重新归一化法线向量至单位长度,Re-normalize normal vectors to unit length after conversion,tools\normal_convert.py:28
+property_name,属性名,转换模式,Conversion Mode,tools\normal_convert.py:15; tools\normal_convert.py:36
+property_name,属性名,输入白点,Input White,tools\levels.py:20
+property_name,属性名,输入类型,Input Type,tools\texture.py:70
+draw_label,Panel 标签,输入色阶,Input Levels,tools\levels.py:44
+property_name,属性名,输入黑点,Input Black,tools\levels.py:15
+property_desc,属性描述,输出灰度图,Output grayscale image,tools\channel_mixer.py:18
+property_name,属性名,输出白点,Output White,tools\levels.py:35
+draw_label,Panel 标签,输出色阶,Output Levels,tools\levels.py:50
+property_name,属性名,输出黑点,Output Black,tools\levels.py:30
+property_name,属性名,边界填充,Border Fill,tools\blur.py:49
+property_desc,属性描述,边缘保护程度,Edge preservation level,tools\denoise.py:26
+property_desc,属性描述,边缘平滑过渡的像素宽度，0为无抗锯齿,Edge smoothing pixel width; 0 = no anti-aliasing,tools\halftone.py:38
+button_text,Operator 按钮文本,边缘检测,Edge Detect,__init__.py:112; __init__.py:112
+property_desc,属性描述,边缘混合带占短边的比例,Edge blend zone ratio relative to short side,tools\seamless.py:26
+property_desc,属性描述,边缘结构保护强度（越大越保护边缘）,Edge structure protection intensity (higher=more edge protection),tools\seamless.py:48
+hud_text,GPU HUD 文本,进入{label}模态,Enter {label} Mode,tools\operators.py:44
+button_text,Operator 按钮文本,透视形变,Perspective Warp,__init__.py:163; __init__.py:163; warp\perspective_warp.py:368
+undo_message,撤销消息,透视形变另存,Perspective Warp Save As,warp\perspective_warp.py:334
+button_text,Operator 按钮文本,通道修改,Channel Modify,__init__.py:152; __init__.py:152
+button_text,Operator 按钮文本,通道混合器,Channel Mixer,__init__.py:83; __init__.py:83
+property_desc,属性描述,采样半径 (相对图像尺寸),Sampling radius (relative to image size),tools\texture.py:17
+property_name,属性名,采样数,Samples,tools\texture.py:25
+property_name,属性名,重叠宽度,Overlap Width,tools\seamless.py:36
+property_desc,属性描述,量化层级数量,Quantization level count,tools\posterize.py:16
+property_name,属性名,锐化强度,Sharpen Amount,tools\sharpen.py:25
+property_desc,属性描述,锐化量（1=轻微，2=中等，3+=强锐化）,"Sharpen amount (1=light, 2=medium, 3+=strong)",tools\sharpen.py:26
+property_desc,属性描述,降噪强度,Denoising strength,tools\denoise.py:16
+property_name,属性名,随机种子,Random Seed,tools\noise.py:40; tools\noise.py:58
+property_name,属性名,青色-红色,Cyan-Red,tools\color.py:48; tools\color.py:100
+draw_label,Panel 标签,面板分类（默认展开）,Panel Categories (expanded by default),__init__.py:252
+property_name,属性名,预览,Preview,tools\channel.py:64
+property_name,属性名,预览通道,Preview Channel,tools\channel.py:29
+button_text,Operator 按钮文本,颜色混色器,Color Mixer,__init__.py:85; __init__.py:85
+property_name,属性名,饱和度,Saturation,tools\color.py:67; tools\color.py:109; tools\color.py:117; tools\mixer.py:71
+button_text,Operator 按钮文本,马赛克,Mosaic,__init__.py:116; __init__.py:116
+button_text,Operator 按钮文本,高反差保留,High Pass,__init__.py:106; __init__.py:106
+property_name,属性名,高反差半径,High Pass Radius,tools\relight.py:24; tools\relight.py:80
+button_text,Operator 按钮文本,高度→AO,Height→AO,__init__.py:139; __init__.py:139
+property_desc,属性描述,"高频细节保留强度 (0=仅大形, 1=全细节)","High-frequency detail strength (0=shapes only, 1=full detail)",tools\normal.py:26
+property_desc,属性描述,高频细节的加强倍率,High-frequency detail boost multiplier,tools\high_pass.py:26
+property_name,属性名,黄色-蓝色,Yellow-Blue,tools\color.py:56; tools\color.py:102
+button_text,Operator 按钮文本,黑底抠图,Rebuild Alpha,__init__.py:146; __init__.py:146
+property_name,属性名,黑点,Black Point,tools\levels.py:46; tools\levels.py:52

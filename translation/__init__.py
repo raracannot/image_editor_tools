@@ -60,7 +60,7 @@ import ast
 import bpy
 
 _lang_modules = {}
-for _mod_name in ('zh_HANS', 'en_US'):
+for _mod_name in ('zh_HANS', 'en_US', 'ja_JP', 'fr_FR', 'ru_RU', 'de_DE'):
     try:
         _mod = __import__(f'{__package__}.{_mod_name}', fromlist=['data'])
         _lang_modules[_mod_name] = _mod.data
@@ -73,6 +73,10 @@ langs = {
     "zh_HANS": _lang_modules.get('zh_HANS', {}),
     "en_GB": _lang_modules.get('en_US', {}),
     "en_US": _lang_modules.get('en_US', {}),
+    "ja_JP": _lang_modules.get('ja_JP', {}),
+    "fr_FR": _lang_modules.get('fr_FR', {}),
+    "ru_RU": _lang_modules.get('ru_RU', {}),
+    "de_DE": _lang_modules.get('de_DE', {}),
 }
 
 # 获取Blender支持的语言列表，利用异常信息（TypeError）间接获取 Blender 支持的语言列表
@@ -102,6 +106,13 @@ def register():
             trans = _build_translations(data, lang_code)
             for lang, entries in trans.items():
                 combined.setdefault(lang, {}).update(entries)
+    en_data = _lang_modules.get('en_US', {})
+    if en_data:
+        for lang_code in all_languages:
+            if lang_code not in langs and lang_code != 'DEFAULT':
+                trans = _build_translations(en_data, lang_code)
+                for lang, entries in trans.items():
+                    combined.setdefault(lang, {}).update(entries)
     if combined:
         try:
             bpy.app.translations.register(TRANSLATION_DOMAIN, combined)

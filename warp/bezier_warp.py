@@ -247,7 +247,9 @@ class MeshWarpEngine(BaseEngine):
                 buffer = fb.read_color(0, 0, img_w, img_h, 4, 0, 'FLOAT')
                 gpu.matrix.pop_projection(); gpu.matrix.pop()
             offscreen.free()
-            pixel_data = np.array(buffer.to_list(), dtype=np.float32).ravel()
+            # pixel_data = np.array(buffer.to_list(), dtype=np.float32).ravel()
+            pixel_data = np.array(buffer, copy=False, dtype=np.float32).flatten('F')
+            
             result = pixel_data.reshape(img_h, img_w, 4)
             if not state._HAS_SRGB_SHADER:
                 from ..utils.np_img_utils import np_linear_to_srgb
@@ -257,6 +259,8 @@ class MeshWarpEngine(BaseEngine):
             bpy.ops.ed.undo_push(message="贝塞尔扭曲另存")
         except Exception as e:
             print(f"[贝塞尔扭曲] 另存失败: {e}")
+        finally:
+            self.cleanup()
 
     def apply_to_original(self):
         try:
@@ -313,7 +317,8 @@ class MeshWarpEngine(BaseEngine):
 
             offscreen.free()
 
-            pixel_data = np.array(buffer.to_list(), dtype=np.float32).ravel()
+            # pixel_data = np.array(buffer.to_list(), dtype=np.float32).ravel()
+            pixel_data = np.array(buffer, copy=False, dtype=np.float32).flatten('F')
             result = pixel_data.reshape(img_h, img_w, 4)
             if not state._HAS_SRGB_SHADER:
                 from ..utils.np_img_utils import np_linear_to_srgb
@@ -323,8 +328,6 @@ class MeshWarpEngine(BaseEngine):
 
         except Exception as e:
             print(f"[贝塞尔扭曲] 应用失败: {e}")
-            import traceback
-            traceback.print_exc()
         finally:
             self.cleanup()
 

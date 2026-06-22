@@ -1,6 +1,27 @@
 import numpy as np
 
 
+# 混合模式枚举项（唯一来源；composite / place_image / place_text 共用）
+# 标签为中文源串，由 translation 翻译。
+BLEND_MODE_ITEMS = [
+    ('MIX', "正常", ""),
+    ('DARKEN', "变暗", ""),
+    ('MULTIPLY', "正片叠底", ""),
+    ('BURN', "颜色加深", ""),
+    ('LIGHTEN', "变亮", ""),
+    ('SCREEN', "滤色", ""),
+    ('DODGE', "颜色减淡", ""),
+    ('ADD', "线性减淡", ""),
+    ('OVERLAY', "叠加", ""),
+    ('SOFT_LIGHT', "柔光", ""),
+    ('LINEAR_LIGHT', "线性光", ""),
+    ('DIFFERENCE', "差值", ""),
+    ('EXCLUSION', "排除", ""),
+    ('SUBTRACT', "减去", ""),
+    ('DIVIDE', "划分", ""),
+]
+
+
 def apply_blend_mode(bg, fg, mode):
     eps = 1e-5
     B, L = bg, fg

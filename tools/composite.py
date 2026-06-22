@@ -2,25 +2,7 @@
 import numpy as np
 from .base import BaseTool
 from . import _on_param_update
-from ..utils.blend_modes import apply_blend_mode
-
-BLEND_MODE_ITEMS = [
-    ('MIX', "正常", ""),
-    ('DARKEN', "变暗", ""),
-    ('MULTIPLY', "正片叠底", ""),
-    ('BURN', "颜色加深", ""),
-    ('LIGHTEN', "变亮", ""),
-    ('SCREEN', "滤色", ""),
-    ('DODGE', "颜色减淡", ""),
-    ('ADD', "线性减淡", ""),
-    ('OVERLAY', "叠加", ""),
-    ('SOFT_LIGHT', "柔光", ""),
-    ('LINEAR_LIGHT', "线性光", ""),
-    ('DIFFERENCE', "差值", ""),
-    ('EXCLUSION', "排除", ""),
-    ('SUBTRACT', "减去", ""),
-    ('DIVIDE', "划分", ""),
-]
+from ..utils.blend_modes import BLEND_MODE_ITEMS
 
 
 class CompositeTool(BaseTool):
@@ -73,6 +55,7 @@ class CompositeTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
+        from ..utils.blend_modes import apply_blend_mode
         fg_img = props.composite_fg
         if fg_img is None:
             CompositeTool._cache_key = None

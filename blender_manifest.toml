@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 blender_version_min = "4.2.0"
-version = "0.3.5"
+version = "0.3.7"
 id = "image_editor_tools"
 name = "Image Editor Master [图像超级工具]"
 tagline = "Super Image Toolbox (color, filters, texture optimization)"
@@ -20,7 +20,7 @@ paths_exclude_pattern = [
     "__pycache__/",
     ".git/",
     ".opencode/",
-    ".scripts/",
+    "scripts/",
     "*.zip",
     ".gitignore",
     ".gitattributes",

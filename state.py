@@ -2,14 +2,16 @@ import bpy
 
 current_tool = 'NONE'
 
-
-_SRGB_SHADER_VERSION = (4, 3, 0)
-_HAS_SRGB_SHADER = bpy.app.version >= _SRGB_SHADER_VERSION
 _cached_shader = None
+_HAS_SRGB_SHADER = False
 def get_display_shader():
-    import gpu
-    global _cached_shader
-    shader = 'IMAGE_SCENE_LINEAR_TO_REC709_SRGB' if _HAS_SRGB_SHADER else 'IMAGE'
+    global _cached_shader,_HAS_SRGB_SHADER
     if _cached_shader is None:
-        _cached_shader = gpu.shader.from_builtin(shader)
+        import gpu
+        try:
+            _cached_shader = gpu.shader.from_builtin('IMAGE_SCENE_LINEAR_TO_REC709_SRGB')
+            _HAS_SRGB_SHADER = True
+        except Exception:
+            _cached_shader = gpu.shader.from_builtin('IMAGE')
+            _HAS_SRGB_SHADER = False
     return _cached_shader

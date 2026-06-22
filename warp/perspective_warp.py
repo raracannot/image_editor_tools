@@ -49,7 +49,7 @@ class PerspectiveTool:
             H = np.linalg.solve(A, B)
             H = np.append(H, 1.0).reshape(3, 3)
         except np.linalg.LinAlgError:
-            print("矩阵求解失败")
+            print("[透视形变] 矩阵求解失败")
             return np_array
             
         Y, X = np.mgrid[0:h, 0:w].astype(np.float64)
@@ -334,6 +334,8 @@ class PerspectiveEngine(BaseEngine):
             bpy.ops.ed.undo_push(message="透视形变另存")
         except Exception as e:
             print(f"[透视形变] 另存失败: {e}")
+        finally:
+            self.cleanup()
 
     def apply_to_original(self):
         try:
@@ -348,7 +350,7 @@ class PerspectiveEngine(BaseEngine):
             self.original_image.pixels.foreach_set(result.ravel())
             self.original_image.update()
         except Exception as e:
-            print(f"应用失败: {e}")
+            print(f"[透视形变] 应用失败: {e}")
         finally:
             self.cleanup()
 
@@ -380,5 +382,3 @@ class IMAGE_OT_perspective_warp_modal(WarpModalBase):
             engine.mode = 'WARP' if engine.mode == 'LAYOUT' else 'LAYOUT'
             return True
         return False
-
-        return {'FINISHED'}

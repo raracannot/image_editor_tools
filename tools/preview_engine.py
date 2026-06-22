@@ -67,6 +67,11 @@ class PreviewEngine(BaseEngine):
     def _draw(self):
         if self.preview_bl_image is None:
             return
+        try:
+            _ = self.preview_bl_image.name
+        except ReferenceError:
+            self.preview_bl_image = None
+            return
         rect = self._get_image_rect()
         if rect is None:
             return
@@ -223,10 +228,14 @@ class PreviewEngine(BaseEngine):
 
     def cleanup(self):
         if self.preview_bl_image is not None:
-            name = self.preview_bl_image.name
-            if name in bpy.data.images:
-                bpy.data.images.remove(bpy.data.images[name])
-            self.preview_bl_image = None
+            try:
+                name = self.preview_bl_image.name
+            except ReferenceError:
+                self.preview_bl_image = None
+            else:
+                if name in bpy.data.images:
+                    bpy.data.images.remove(bpy.data.images[name])
+                self.preview_bl_image = None
         self.preview_np = None
         self._cached_preview_tex = None
         self._cached_preview_image = None

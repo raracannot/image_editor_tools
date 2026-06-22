@@ -20,6 +20,13 @@ class RelightTool(BaseTool):
     @staticmethod
     def get_properties():
         return {
+            'relight_engine': bpy.props.EnumProperty(
+                name="引擎",
+                description="GPU 着色器(快) 或 CPU numpy",
+                items=[('GPU', "GPU", "GPU 着色器"), ('CPU', "CPU", "numpy")],
+                default='GPU',
+                update=_on_param_update,
+            ),
             'relight_highpass_sigma': bpy.props.FloatProperty(
                 name="高反差半径",
                 description="控制分离光影的尺度，值越大去除越粗的光影",
@@ -77,6 +84,8 @@ class RelightTool(BaseTool):
 
     @staticmethod
     def draw_panel(layout, props):
+        layout.prop(props, "relight_engine")
+        layout.separator()
         layout.prop(props, "relight_highpass_sigma", text="高反差半径", slider=True)
         layout.prop(props, "relight_base_mode", text="基色模式")
         if props.relight_base_mode == 'BLUR':
@@ -97,7 +106,15 @@ class RelightTool(BaseTool):
         h, w = rgb.shape[:2]
 
         sigma = max(0.1, props.relight_highpass_sigma)
-        blurred = np_gaussian_filter(rgb, sigma)
+        if getattr(props, 'relight_engine', 'GPU') == 'GPU':
+            try:
+                from ..utils.gpu_img_utils import gpu_gaussian_npimg
+                blurred = gpu_gaussian_npimg(_rgb_to_rgba(rgb), sigma, 'edge')[:, :, :3]
+            except Exception as e:
+                print(f"[均匀光影] GPU 失败，回退 CPU: {e}")
+                blurred = np_gaussian_filter(rgb, sigma)
+        else:
+            blurred = np_gaussian_filter(rgb, sigma)
         detail = rgb - blurred
 
         base_mode = props.relight_base_mode

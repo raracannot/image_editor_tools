@@ -45,13 +45,17 @@ class BaseEngine:
         if self.original_image is None:
             return None
 
+        try:
+            img_w, img_h = self.original_image.size
+        except ReferenceError:
+            self.should_exit = True
+            return None
+        if img_w <= 0 or img_h <= 0:
+            return None
+
         context = bpy.context
         region = context.region
         if region is None or region.type != 'WINDOW':
-            return None
-
-        img_w, img_h = self.original_image.size
-        if img_w <= 0 or img_h <= 0:
             return None
 
         zoom_x, zoom_y = context.space_data.zoom[0], context.space_data.zoom[1]
@@ -64,9 +68,13 @@ class BaseEngine:
 
         self._img_rect = (offset_x, offset_y, disp_w, disp_h)
 
-        if self._cached_orig_image is not self.original_image:
-            self._cached_orig_tex = gpu.texture.from_image(self.original_image)
-            self._cached_orig_image = self.original_image
+        try:
+            if self._cached_orig_image is not self.original_image:
+                self._cached_orig_tex = gpu.texture.from_image(self.original_image)
+                self._cached_orig_image = self.original_image
+        except ReferenceError:
+            self.should_exit = True
+            return None
 
         return offset_x, offset_y, disp_w, disp_h
 

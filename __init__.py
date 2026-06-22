@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Image Editor Master [图像超级工具]",
     "author": "RARA[来一点咖啡吗]",
-    "version": (0, 3, 5),
+    "version": (0, 3, 7),
     "blender": (4, 2, 0),
     'doc_url': 'https://space.bilibili.com/27284213',
     "location": "Image Editor > Sidebar(N-Panel) > Tool",
@@ -18,6 +18,8 @@ from . import ops
 from . import state
 from . import translation
 from .tools import TOOLS, operator_classes, PreviewEngine
+from .utils.blend_modes import BLEND_MODE_ITEMS
+from .utils import gpu_img_utils as giu
 
 
 class IMAGEEDITOR_TOOLS_PG_Properties(bpy.types.PropertyGroup):
@@ -27,19 +29,53 @@ class IMAGEEDITOR_TOOLS_PG_Properties(bpy.types.PropertyGroup):
     )
     place_img_mode: bpy.props.EnumProperty(
         name="混合模式",
-        items=[
-            ('MIX', "正常", ""),
-            ('DARKEN', "变暗", ""), ('MULTIPLY', "正片叠底", ""),
-            ('BURN', "颜色加深", ""), ('LIGHTEN', "变亮", ""),
-            ('SCREEN', "滤色", ""), ('DODGE', "颜色减淡", ""),
-            ('ADD', "线性减淡", ""), ('OVERLAY', "叠加", ""),
-            ('SOFT_LIGHT', "柔光", ""), ('LINEAR_LIGHT', "线性光", ""),
-            ('DIFFERENCE', "差值", ""), ('EXCLUSION', "排除", ""),
-            ('SUBTRACT', "减去", ""), ('DIVIDE', "划分", ""),
-        ],
+        items=BLEND_MODE_ITEMS,
         default='MIX',
     )
     place_img_opacity: bpy.props.FloatProperty(
+        name="不透明度", default=1.0, min=0.0, max=1.0,
+        soft_min=0.0, soft_max=1.0, subtype='FACTOR',
+    )
+    place_text_content: bpy.props.StringProperty(
+        name="文字内容", default="文字",
+        description="要置入的文字内容",
+    )
+    place_text_font_path: bpy.props.StringProperty(
+        name="字体文件",
+        subtype='FILE_PATH',
+        default="",
+        description="自定义字体文件路径，留空使用默认字体",
+    )
+    place_text_font_size: bpy.props.IntProperty(
+        name="字号", default=120, min=10, max=2000,
+        description="文字大小（像素）",
+    )
+    place_text_color: bpy.props.FloatVectorProperty(
+        name="文字颜色",
+        subtype='COLOR',
+        size=4,
+        default=(1.0, 1.0, 1.0, 1.0),
+        min=0.0, max=1.0,
+        description="文字颜色 (RGBA)",
+    )
+    place_text_letter_spacing: bpy.props.FloatProperty(
+        name="字间距", default=0.0, min=-50.0, max=500.0,
+        description="字符之间的额外间距（像素）",
+    )
+    place_text_italic_angle: bpy.props.FloatProperty(
+        name="倾斜角度", default=0.0, min=-45.0, max=45.0,
+        description="文字倾斜角度（度）",
+    )
+    place_text_padding: bpy.props.FloatProperty(
+        name="出血", default=0.2, min=0.0, max=5.0,
+        description="基于字高的出血比例，实际出血 = 系数 × 字号",
+    )
+    place_text_mode: bpy.props.EnumProperty(
+        name="混合模式",
+        items=BLEND_MODE_ITEMS,
+        default='MIX',
+    )
+    place_text_opacity: bpy.props.FloatProperty(
         name="不透明度", default=1.0, min=0.0, max=1.0,
         soft_min=0.0, soft_max=1.0, subtype='FACTOR',
     )
@@ -163,6 +199,7 @@ class IMAGEEDITOR_TOOLS_PT_MainPanel(bpy.types.Panel):
             op = col.operator("image_editor_tools.perspective_warp_modal", text="透视形变", icon='MESH_GRID')
             op = col.operator("image_editor_tools.free_crop_modal", text="自由裁切", icon='BORDERMOVE')
             op = col.operator("image_editor_tools.place_image_modal", text="置入图像", icon='IMAGE_DATA')
+            op = col.operator("image_editor_tools.place_text_modal", text="置入文字", icon='FONT_DATA')
             op = col.operator("image_editor_tools.slice_image_modal", text="切分图像", icon='GRID')
 
 
@@ -201,6 +238,22 @@ class IMAGEEDITOR_TOOLS_PT_ToolPanel(bpy.types.Panel):
                     layout.prop(props, "place_img_opacity", text="不透明度", slider=True)
                 else:
                     layout.label(text="请选择一幅前景图", icon='INFO')
+                layout.separator()
+            elif state.current_tool == 'warp:置入文字':
+                layout.prop(props, "place_text_content", text="文字")
+                layout.prop(props, "place_text_font_path", text="字体")
+                row = layout.row(align=True)
+                row.prop(props, "place_text_font_size", text="字号")
+                row.prop(props, "place_text_color", text="")
+                row = layout.row(align=True)
+                row.prop(props, "place_text_letter_spacing", text="字间距")
+                row.prop(props, "place_text_italic_angle", text="倾斜")
+                layout.prop(props, "place_text_padding", text="出血", slider=True)
+                if props.place_text_content:
+                    layout.prop(props, "place_text_mode", text="模式")
+                    layout.prop(props, "place_text_opacity", text="不透明度", slider=True)
+                else:
+                    layout.label(text="请输入文字内容", icon='INFO')
                 layout.separator()
             elif state.current_tool == 'warp:切分图像':
                 layout.prop(props, "slice_cols", text="纵向")
@@ -311,6 +364,13 @@ def unregister():
         engine = PreviewEngine._active_instance
         if engine is not None:
             engine.cleanup()
+    except Exception:
+        pass
+    try:
+        giu.clear_shader_cache()
+        for _nm in ('._tool_preview_temp', '._place_text_temp', '._place_text_composite'):
+            if _nm in bpy.data.images:
+                bpy.data.images.remove(bpy.data.images[_nm])
     except Exception:
         pass
     try:

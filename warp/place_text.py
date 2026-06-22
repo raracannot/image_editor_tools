@@ -1,23 +1,28 @@
-﻿import bpy
+import bpy
 import gpu
 import blf
 import math
 from gpu_extras.batch import batch_for_shader
 from ..engine_base import BaseEngine
 from .. import state
-from ..utils import gpu_img_utils as giu
 from ..translation import pget_tmpl
+from ..utils import gpu_img_utils as giu
 from .base_op import WarpModalBase
 
 
-class PlaceImageEngine(BaseEngine):
+TEMP_IMAGE_NAME = "._place_text_temp"
+COMPOSITE_IMAGE_NAME = "._place_text_composite"
+
+
+class PlaceTextEngine(BaseEngine):
     _engine_type = 'warp'
 
     def __init__(self, context, image):
-        self.fg_image = None
-        self._fg_raw_tex = None
-        self._fg_raw_ref = None
+        self._text_image = None
+        self._text_tex = None
+        self._text_params_hash = None
         self._bg_raw_tex = None
+        self._text_raw_tex = None
 
         img_w, img_h = image.size
         self.offset_x = img_w / 2.0
@@ -32,22 +37,62 @@ class PlaceImageEngine(BaseEngine):
         self._drag_start_rot = 0.0
         self._drag_start_angle = 0.0
 
-        self._load_fg_image()
         super().__init__(context, image)
-        self._ensure_top_tex()
+        self._ensure_text_tex()
 
-    def _load_fg_image(self):
-        props = bpy.context.scene.image_editor_tools
-        fg = getattr(props, 'place_img_fg', None)
-        if fg is not None:
-            self.fg_image = fg
+    def _get_props(self):
+        return bpy.context.scene.image_editor_tools
 
-    def _ensure_top_tex(self):
-        if self.fg_image is None:
+    def _make_text_params_hash(self):
+        props = self._get_props()
+        return (
+            getattr(props, 'place_text_content', ''),
+            getattr(props, 'place_text_font_path', ''),
+            getattr(props, 'place_text_font_size', 120),
+            tuple(getattr(props, 'place_text_color', (1.0, 1.0, 1.0, 1.0))),
+            getattr(props, 'place_text_letter_spacing', 0.0),
+            getattr(props, 'place_text_italic_angle', 0.0),
+            getattr(props, 'place_text_padding', 0.2),
+            getattr(props, 'place_text_mode', 'MIX'),
+            getattr(props, 'place_text_opacity', 1.0),
+        )
+
+    def _generate_text_image(self):
+        props = self._get_props()
+        text = getattr(props, 'place_text_content', '')
+        font_path = getattr(props, 'place_text_font_path', '')
+        font_size = getattr(props, 'place_text_font_size', 120)
+        color = getattr(props, 'place_text_color', (1.0, 1.0, 1.0, 1.0))
+        letter_spacing = getattr(props, 'place_text_letter_spacing', 0.0)
+        italic_angle = getattr(props, 'place_text_italic_angle', 0.0)
+        padding = getattr(props, 'place_text_padding', 0.2)
+
+        return giu.gpu_text_to_image(
+            text, TEMP_IMAGE_NAME,
+            font_path=font_path,
+            font_size=font_size,
+            color=tuple(color),
+            letter_spacing=letter_spacing,
+            italic_angle=italic_angle,
+            padding=padding,
+        )
+
+    def _ensure_text_tex(self):
+        current_hash = self._make_text_params_hash()
+        if current_hash == self._text_params_hash and self._text_tex is not None:
             return
-        if self._fg_raw_ref is not self.fg_image:
-            self._fg_raw_tex = giu.tex_from_image_raw(self.fg_image)
-            self._fg_raw_ref = self.fg_image
+        self._text_params_hash = current_hash
+        self._text_image = self._generate_text_image()
+        if self._text_tex is not None:
+            try:
+                del self._text_tex
+            except Exception:
+                pass
+        self._text_tex = gpu.texture.from_image(self._text_image)
+        try:
+            self._text_raw_tex = giu.tex_from_image_raw(self._text_image)
+        except Exception:
+            self._text_raw_tex = None
 
     def _get_quad_verts(self):
         offset_x, offset_y, disp_w, disp_h = self._img_rect
@@ -56,8 +101,8 @@ class PlaceImageEngine(BaseEngine):
 
         img_w, img_h = self.original_image.size
         fw, fh = (img_w, img_h)
-        if self.fg_image is not None:
-            fw, fh = self.fg_image.size
+        if self._text_image is not None:
+            fw, fh = self._text_image.size
         if fw <= 0 or fh <= 0:
             fw, fh = img_w, img_h
 
@@ -88,35 +133,81 @@ class PlaceImageEngine(BaseEngine):
             result.append((rx, ry))
         return result
 
-    def _draw_composite_live(self, offset_x, offset_y, disp_w, disp_h):
-        # 用合成着色器在屏幕做单 pass 合成(实时混合模式/不透明度)。
-        # 用裸值纹理 + srgb_out=1，混合空间与落地一致(线性光等阈值类混合模式预览=应用)。
+    def _draw(self):
+        rect = self._get_image_rect()
+        if rect is None:
+            return
+        offset_x, offset_y, disp_w, disp_h = rect
         x0, y0 = offset_x, offset_y
         x1, y1 = offset_x + disp_w, offset_y + disp_h
 
-        if self.fg_image is None or self._fg_raw_tex is None or self._cached_orig_tex is None:
-            shader = state.get_display_shader()
+        self._ensure_text_tex()
+
+        if self._drag_mode != 'NONE':
+            self._draw_live_overlay(offset_x, offset_y, disp_w, disp_h)
+        else:
+            self._draw_composite(offset_x, offset_y, disp_w, disp_h)
+
+        quad = self._get_quad_verts()
+        self._draw_handles(quad)
+
+        font_id = 0
+        blf.size(font_id, 16)
+        blf.color(font_id, 0.9, 0.9, 0.9, 1.0)
+        s = pget_tmpl("置入文字 | 拖拽移动 | 角点缩放 | 旋转 ({angle}°) [Shift吸附] | Enter应用 | Esc取消",
+                      angle=f"{math.degrees(self.rotation):.1f}")
+        blf.position(font_id, x0, y0 - 25, 0)
+        blf.draw(font_id, s)
+
+    def _draw_live_overlay(self, offset_x, offset_y, disp_w, disp_h):
+        x0, y0 = offset_x, offset_y
+        x1, y1 = offset_x + disp_w, offset_y + disp_h
+
+        shader = state.get_display_shader()
+        shader.bind()
+        shader.uniform_sampler("image", self._cached_orig_tex)
+        batch_for_shader(shader, 'TRI_FAN', {
+            "pos": [(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+            "texCoord": [(0, 0), (1, 0), (1, 1), (0, 1)],
+        }).draw(shader)
+
+        quad = self._get_quad_verts()
+        if self._text_tex is not None:
+            gpu.state.blend_set('ALPHA')
             shader.bind()
-            shader.uniform_sampler("image", self._cached_orig_tex)
+            shader.uniform_sampler("image", self._text_tex)
             batch_for_shader(shader, 'TRI_FAN', {
-                "pos": [(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+                "pos": quad,
                 "texCoord": [(0, 0), (1, 0), (1, 1), (0, 1)],
             }).draw(shader)
+            gpu.state.blend_set('NONE')
+
+    def _draw_composite(self, offset_x, offset_y, disp_w, disp_h):
+        # 用裸值纹理 + srgb_out=1 在屏幕做单 pass 合成，混合空间与落地一致
+        # (线性光等阈值类混合模式预览=应用)。落地/另存走 composite_transform_to_npimg。
+        if self._text_raw_tex is None or self._cached_orig_tex is None:
+            self._draw_live_overlay(offset_x, offset_y, disp_w, disp_h)
             return
 
         if self._bg_raw_tex is None:
             self._bg_raw_tex = giu.tex_from_image_raw(self.original_image)
 
-        img_w, img_h = self.original_image.size
-        fw, fh = self.fg_image.size
+        x0, y0 = offset_x, offset_y
+        x1, y1 = offset_x + disp_w, offset_y + disp_h
 
-        props = bpy.context.scene.image_editor_tools
-        mode = getattr(props, 'place_img_mode', 'MIX')
-        opacity = getattr(props, 'place_img_opacity', 1.0)
+        img_w, img_h = self.original_image.size
+        if self._text_image is not None:
+            fw, fh = self._text_image.size
+        else:
+            fw, fh = img_w, img_h
+
+        props = self._get_props()
+        mode = getattr(props, 'place_text_mode', 'MIX')
+        opacity = getattr(props, 'place_text_opacity', 1.0)
 
         shader = giu.get_composite_shader()
         giu.bind_composite(
-            shader, self._bg_raw_tex, self._fg_raw_tex,
+            shader, self._bg_raw_tex, self._text_raw_tex,
             img_w, img_h, fw, fh,
             self.offset_x, self.offset_y, self.scale, self.rotation,
             blend_mode=mode, opacity=opacity, srgb_out=1)
@@ -126,21 +217,7 @@ class PlaceImageEngine(BaseEngine):
             "texCoord": [(0, 0), (1, 0), (1, 1), (0, 1)],
         }).draw(shader)
 
-    def _draw(self):
-        rect = self._get_image_rect()
-        if rect is None:
-            return
-        offset_x, offset_y, disp_w, disp_h = rect
-        x0, y0 = offset_x, offset_y
-        x1, y1 = offset_x + disp_w, offset_y + disp_h
-
-        self._load_fg_image()
-        self._ensure_top_tex()
-
-        self._draw_composite_live(offset_x, offset_y, disp_w, disp_h)
-
-        quad = self._get_quad_verts()
-
+    def _draw_handles(self, quad):
         line_shader = gpu.shader.from_builtin('UNIFORM_COLOR')
         line_shader.bind()
         line_shader.uniform_float("color", (1.0, 1.0, 1.0, 1.0))
@@ -157,7 +234,8 @@ class PlaceImageEngine(BaseEngine):
                         (px + h_size, py + h_size), (px - h_size, py + h_size)]
             }).draw(line_shader)
 
-        cx, cy = sum(p[0] for p in quad) / 4.0, sum(p[1] for p in quad) / 4.0
+        cx = sum(p[0] for p in quad) / 4.0
+        cy = sum(p[1] for p in quad) / 4.0
         hw = math.hypot(p1[0] - p0[0], p1[1] - p0[1]) / 2.0
         hh = math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / 2.0
         ca, sa = math.cos(self.rotation), math.sin(self.rotation)
@@ -181,14 +259,6 @@ class PlaceImageEngine(BaseEngine):
         for px, py in rot_pts:
             rv = [(px + v[0] * 6, py + v[1] * 6) for v in circle_verts]
             batch_for_shader(rot_shader, 'TRI_FAN', {"pos": rv}).draw(rot_shader)
-
-        font_id = 0
-        blf.size(font_id, 16)
-        blf.color(font_id, 0.9, 0.9, 0.9, 1.0)
-        s = pget_tmpl("置入图像 | 拖拽移动 | 角点缩放 | 旋转 ({angle}°) [Shift吸附] | Enter应用 | Esc取消",
-                      angle=f"{math.degrees(self.rotation):.1f}")
-        blf.position(font_id, x0, y0 - 25, 0)
-        blf.draw(font_id, s)
 
     def handle_mouse_press(self, event):
         mx, my = event.mouse_region_x, event.mouse_region_y
@@ -300,67 +370,89 @@ class PlaceImageEngine(BaseEngine):
 
     def apply_to_original(self):
         try:
-            self._load_fg_image()
-            if self.fg_image is None:
+            self._ensure_text_tex()
+            if self._text_image is None:
                 self.cleanup()
                 return
-            props = bpy.context.scene.image_editor_tools
-            mode = getattr(props, 'place_img_mode', 'MIX')
-            opacity = getattr(props, 'place_img_opacity', 1.0)
+            props = self._get_props()
+            mode = getattr(props, 'place_text_mode', 'MIX')
+            opacity = getattr(props, 'place_text_opacity', 1.0)
             result = giu.composite_transform_to_npimg(
-                self.original_image, self.fg_image,
+                self.original_image, self._text_image,
                 self.offset_x, self.offset_y, self.scale, self.rotation,
                 blend_mode=mode, opacity=opacity)
             self.original_image.pixels.foreach_set(result.ravel())
             self.original_image.update()
         except Exception as e:
-            print(f"[置入图像] 应用失败: {e}")
+            print(f"[置入文字] 应用失败: {e}")
         finally:
             self.cleanup()
 
     def save_as_copy(self):
         try:
             from ..utils.np_img_utils import npimg_2_blimg
-            self._load_fg_image()
-            if self.fg_image is None:
+            self._ensure_text_tex()
+            if self._text_image is None:
                 self.cleanup()
                 return
-            props = bpy.context.scene.image_editor_tools
-            mode = getattr(props, 'place_img_mode', 'MIX')
-            opacity = getattr(props, 'place_img_opacity', 1.0)
+            props = self._get_props()
+            mode = getattr(props, 'place_text_mode', 'MIX')
+            opacity = getattr(props, 'place_text_opacity', 1.0)
             result = giu.composite_transform_to_npimg(
-                self.original_image, self.fg_image,
+                self.original_image, self._text_image,
                 self.offset_x, self.offset_y, self.scale, self.rotation,
                 blend_mode=mode, opacity=opacity)
-            new_name = self.original_image.name + "_placed"
+            new_name = self.original_image.name + "_text"
             npimg_2_blimg(result, new_name, True)
-            bpy.ops.ed.undo_push(message="置入图像另存")
+            bpy.ops.ed.undo_push(message="置入文字另存")
         except Exception as e:
-            print(f"[置入图像] 另存失败: {e}")
+            print(f"[置入文字] 另存失败: {e}")
         finally:
             self.cleanup()
 
     def cleanup(self):
-        for attr in ('_fg_raw_tex', '_bg_raw_tex'):
+        if self._text_tex is not None:
+            try:
+                del self._text_tex
+            except Exception:
+                pass
+            self._text_tex = None
+        if self._text_image is not None:
+            try:
+                bpy.data.images.remove(self._text_image)
+            except Exception:
+                pass
+            self._text_image = None
+        self._text_params_hash = None
+        for attr in ('_bg_raw_tex', '_text_raw_tex'):
             if getattr(self, attr, None) is not None:
                 try:
                     delattr(self, attr)
                 except Exception:
                     pass
                 setattr(self, attr, None)
-        self._fg_raw_ref = None
         super().cleanup()
 
 
-class IMAGE_OT_place_image_modal(WarpModalBase):
-    bl_idname = "image_editor_tools.place_image_modal"
-    bl_label = "置入图像"
-    engine_class = PlaceImageEngine
-    tool_key = 'warp:置入图像'
-    tool_label = '置入图像'
-    status_text = "置入图像: 拖拽移动 | 角点缩放 | 旋转 [Shift吸附] | Enter应用 | Esc取消"
+class IMAGE_OT_place_text_modal(WarpModalBase):
+    bl_idname = "image_editor_tools.place_text_modal"
+    bl_label = "置入文字"
+    engine_class = PlaceTextEngine
+    tool_key = 'warp:置入文字'
+    tool_label = '置入文字'
+    status_text = "置入文字: 拖拽移动 | 角点缩放 | 旋转 [Shift吸附] | Enter应用 | Esc取消"
     _drag_attr = '_drag_mode'
     _drag_none = 'NONE'
+
+    def modal(self, context, event):
+        if event.type in {'RET', 'NUMPAD_ENTER'}:
+            engine = self.engine_class._active_instance
+            if engine is not None:
+                mx, my = event.mouse_region_x, event.mouse_region_y
+                quad = engine._get_quad_verts()
+                if not engine._point_in_quad(mx, my, quad):
+                    return {'PASS_THROUGH'}
+        return super().modal(context, event)
 
     def _custom_keys(self, context, event, engine):
         if event.type == 'F' and event.value == 'PRESS':

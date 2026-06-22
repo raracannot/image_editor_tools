@@ -32,7 +32,7 @@ class HalftoneTool(BaseTool):
             'halftone_angle': bpy.props.FloatProperty(
                 name="角度", description="网屏角度",
                 default=45.0, min=0.0, max=180.0, soft_min=0.0, soft_max=180.0,
-                subtype='ANGLE', update=_on_param_update,
+                update=_on_param_update,
             ),
             'halftone_aa': bpy.props.FloatProperty(
                 name="抗锯齿", description="边缘平滑过渡的像素宽度，0为无抗锯齿",

@@ -11,6 +11,16 @@ class BlurTool(BaseTool):
     @staticmethod
     def get_properties():
         return {
+            'blur_backend': bpy.props.EnumProperty(
+                name="模糊引擎",
+                description="GPU 着色器(快、半径无关) 或 CPU numpy",
+                items=[
+                    ('GPU', "GPU", "GPU 着色器模糊"),
+                    ('CPU', "CPU", "numpy 模糊"),
+                ],
+                default='GPU',
+                update=_on_param_update,
+            ),
             'blur_radius': bpy.props.FloatProperty(
                 name="模糊半径",
                 description="模糊强度 (0-100)",
@@ -62,22 +72,102 @@ class BlurTool(BaseTool):
                 default=False,
                 update=_on_param_update,
             ),
+            'gpu_blur_radius': bpy.props.FloatProperty(
+                name="模糊强度",
+                description="按图像对角线比例 (0-100)，预览/应用一致",
+                default=10.0,
+                min=0.0,
+                max=100.0,
+                soft_min=0.0,
+                soft_max=50.0,
+                subtype='PERCENTAGE',
+                update=_on_param_update,
+            ),
+            'gpu_blur_mode': bpy.props.EnumProperty(
+                name="模糊类型",
+                description="GPU 模糊算法",
+                items=[
+                    ('BOX', "盒式 (可分离)", "O(r) 水平+垂直两趟，快"),
+                    ('GAUSSIAN', "高斯 (可分离)", "O(r) 平滑高斯"),
+                    ('DOWNSAMPLE', "降采样柔光", "降采样金字塔，最快、柔和"),
+                    ('KAWASE', "Kawase 发光", "多通道对角采样，柔光发光"),
+                    ('RADIAL', "径向", "中心放射模糊"),
+                    ('MOTION', "方向", "沿指定角度的运动模糊"),
+                ],
+                default='BOX',
+                update=_on_param_update,
+            ),
+            'gpu_blur_angle': bpy.props.FloatProperty(
+                name="方向角度",
+                description="方向模糊角度 (-180~180, 0=水平)",
+                default=0.0,
+                min=-180.0,
+                max=180.0,
+                update=_on_param_update,
+            ),
+            'gpu_blur_border': bpy.props.EnumProperty(
+                name="边界填充",
+                description="图像边缘外像素的填充方式（所有 GPU 模式生效）",
+                items=[
+                    ('edge', "边缘延伸", "重复边缘像素"),
+                    ('wrap', "循环平铺", "对侧像素循环填充"),
+                ],
+                default='edge',
+                update=_on_param_update,
+            ),
         }
 
     @staticmethod
     def draw_panel(layout, props):
-        layout.prop(props, "blur_radius", slider=True)
-        layout.prop(props, "blur_mode")
-        if props.blur_mode == 'DIRECTIONAL':
-            layout.prop(props, "blur_direction_angle", slider=True)
-        layout.prop(props, "blur_border_mode")
-        layout.prop(props, "blur_fast")
+        layout.prop(props, "blur_backend")
+        layout.separator()
+        if props.blur_backend == 'GPU':
+            layout.prop(props, "gpu_blur_radius", slider=True)
+            layout.prop(props, "gpu_blur_mode")
+            if props.gpu_blur_mode == 'MOTION':
+                layout.prop(props, "gpu_blur_angle", slider=True)
+            layout.prop(props, "gpu_blur_border")
+        else:
+            layout.prop(props, "blur_radius", slider=True)
+            layout.prop(props, "blur_mode")
+            if props.blur_mode == 'DIRECTIONAL':
+                layout.prop(props, "blur_direction_angle", slider=True)
+            layout.prop(props, "blur_border_mode")
+            layout.prop(props, "blur_fast")
 
     @staticmethod
     def process(np_array, props):
+        if getattr(props, 'blur_backend', 'GPU') == 'GPU':
+            return BlurTool._process_gpu(np_array, props)
         if props.blur_fast:
             return BlurTool._process_fast(np_array, props)
         return BlurTool._process_normal(np_array, props)
+
+    @staticmethod
+    def _process_gpu(np_array, props):
+        import math
+        pct = props.gpu_blur_radius
+        if pct <= 0:
+            return np_array
+        h, w = np_array.shape[:2]
+        base = max(1.0, math.hypot(w, h) / 4.0)
+        radius = max(1, min(int(round(base * pct / 100.0)), int(base)))
+        mode_map = {
+            'BOX': 'separable', 'GAUSSIAN': 'gaussian_separable',
+            'DOWNSAMPLE': 'downsample', 'KAWASE': 'kawase',
+            'RADIAL': 'radial', 'MOTION': 'motion',
+        }
+        blur_type = mode_map.get(props.gpu_blur_mode, 'separable')
+        border = props.gpu_blur_border
+        angle = math.radians(props.gpu_blur_angle)
+        try:
+            from ..utils.gpu_img_utils import gpu_blur_npimg
+            return gpu_blur_npimg(np_array, radius, blur_type=blur_type,
+                                  blur_mode=border, angle=angle)
+        except Exception as e:
+            print(f"[模糊] GPU 失败，回退 CPU: {e}")
+            from ..utils.np_img_utils import np_blur_img
+            return np_blur_img(np_array, pct, border if border in ('edge', 'wrap') else 'edge')
 
     @staticmethod
     def _process_normal(np_array, props):

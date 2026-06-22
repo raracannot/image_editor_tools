@@ -6,6 +6,7 @@ from .bezier_warp import IMAGE_OT_mesh_warp_modal, MeshWarpEngine
 from .perspective_warp import IMAGE_OT_perspective_warp_modal, PerspectiveEngine
 from .free_crop import IMAGE_OT_free_crop_modal, CropEngine
 from .place_image import IMAGE_OT_place_image_modal, PlaceImageEngine
+from .place_text import IMAGE_OT_place_text_modal, PlaceTextEngine
 from .slice_image import IMAGE_OT_slice_image_modal, SliceImageEngine
 
 
@@ -59,6 +60,7 @@ classes = [
     IMAGE_OT_perspective_warp_modal,
     IMAGE_OT_free_crop_modal,
     IMAGE_OT_place_image_modal,
+    IMAGE_OT_place_text_modal,
     IMAGE_OT_slice_image_modal,
     IMAGE_OT_warp_cancel,
     IMAGE_OT_warp_apply,

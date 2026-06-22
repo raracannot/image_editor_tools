@@ -36,11 +36,21 @@ class CrystallizeTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
-        from ..utils.np_img_utils import np_voronoi_crystallize_spatial, np_resize_img
+        from ..utils.np_img_utils import np_resize_img
+        count = props.crystallize_count
+
+        def _crys(a):
+            try:
+                from ..utils.gpu_img_utils import gpu_crystallize_npimg
+                return gpu_crystallize_npimg(a, count)
+            except Exception as e:
+                print(f"[晶格化] GPU 失败，回退 numpy: {e}")
+                from ..utils.np_img_utils import np_voronoi_crystallize_spatial
+                return np_voronoi_crystallize_spatial(a, count)
+
         if props.crystallize_fast:
             h, w = np_array.shape[:2]
             hw, hh = max(1, w // 2), max(1, h // 2)
             small = np_resize_img(np_array, hw, hh)
-            result = np_voronoi_crystallize_spatial(small, props.crystallize_count)
-            return np_resize_img(result, w, h)
-        return np_voronoi_crystallize_spatial(np_array, props.crystallize_count)
+            return np_resize_img(_crys(small), w, h)
+        return _crys(np_array)

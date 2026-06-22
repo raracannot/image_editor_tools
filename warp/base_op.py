@@ -39,12 +39,23 @@ class WarpModalBase(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def modal(self, context, event):
+        if state.current_tool == 'NONE':
+            return self._finish(context)
+
         engine = self.engine_class._active_instance
         if not engine or engine.should_exit:
             return self._finish(context)
+
+        try:
+            _ = engine.original_image.name
+        except ReferenceError:
+            return self._finish(context)
+
         context.area.tag_redraw()
 
-        if event.type in {'RIGHTMOUSE', 'ESC'}:
+        if event.type in {'RIGHTMOUSE', 'ESC', 'Z'}:
+            if event.type == 'Z' and not event.ctrl:
+                return {'PASS_THROUGH'}
             engine.cleanup()
             return self._finish(context)
         elif event.type in {'RET', 'NUMPAD_ENTER'}:

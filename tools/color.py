@@ -1,6 +1,5 @@
 ﻿import bpy
 import numpy as np
-from ..utils.np_img_utils import np_rgb_to_hsv, np_hsv_to_rgb
 from .base import BaseTool
 from . import _on_param_update
 
@@ -119,6 +118,7 @@ class ColorTool(BaseTool):
 
     @staticmethod
     def process(np_array, props):
+        from ..utils.np_img_utils import np_rgb_to_hsv, np_hsv_to_rgb
         rgb = np_array[:, :, :3]
         alpha = np_array[:, :, 3]
         exp = props.color_exposure

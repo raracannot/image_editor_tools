@@ -186,6 +186,15 @@ def register():
 
 
 def unregister():
-    bpy.types.NODE_MT_context_menu.remove(_menu_draw)
-    bpy.utils.unregister_class(IMAGEEDITOR_TOOLS_OT_clipboard_paste_to_prop)
-    bpy.utils.unregister_class(IMAGEEDITOR_TOOLS_OT_open_in_blender_editor)
+    try:
+        bpy.types.NODE_MT_context_menu.remove(_menu_draw)
+    except Exception:
+        pass
+    try:
+        bpy.utils.unregister_class(IMAGEEDITOR_TOOLS_OT_clipboard_paste_to_prop)
+    except Exception:
+        pass
+    try:
+        bpy.utils.unregister_class(IMAGEEDITOR_TOOLS_OT_open_in_blender_editor)
+    except Exception:
+        pass

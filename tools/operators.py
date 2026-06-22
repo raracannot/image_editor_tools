@@ -56,18 +56,27 @@ class IMAGE_OT_tool_start(bpy.types.Operator):
             raise
 
     def modal(self, context, event):
+        if state.current_tool == 'NONE':
+            return self._finish(context)
+
         engine = getattr(self, '_engine', None)
         if engine is None or engine.should_exit:
             return self._finish(context)
 
         if event.type == 'TIMER':
+            try:
+                _ = engine.original_image.name
+            except ReferenceError:
+                return self._finish(context)
             for window in context.window_manager.windows:
                 for area in window.screen.areas:
                     if area.type == 'IMAGE_EDITOR':
                         area.tag_redraw()
             return {'PASS_THROUGH'}
 
-        if event.type == 'ESC':
+        if event.type in {'ESC', 'Z'}:
+            if event.type == 'Z' and not event.ctrl:
+                return {'PASS_THROUGH'}
             engine.cleanup()
             return self._finish(context)
 

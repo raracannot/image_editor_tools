@@ -117,6 +117,8 @@ class CropEngine(BaseEngine):
     def handle_mouse_press(self, event):
         mx, my = event.mouse_region_x, event.mouse_region_y
         self._drag_mode = self._get_hit_zone(mx, my)
+        if self._drag_mode == 'NONE':
+            return False
         self._drag_start_pos = (mx, my)
         self._drag_start_rect = list(self.crop_rect)
         self._drag_start_rot = self.rotation
@@ -445,19 +447,20 @@ class CropEngine(BaseEngine):
             bpy.ops.ed.undo_push(message="自由裁切另存")
         except Exception as e:
             print(f"[自由裁切] 另存失败: {e}")
+        finally:
+            self.cleanup()
 
     def apply_to_original(self):
         try:
             full_np = blimg_2_npimg(self.original_image)
-            # 直接使用类属性中的填充模式
             result = CropTool.process(full_np, self.crop_rect, self.rotation, self.padding_mode)
-            
+
             h, w = result.shape[:2]
             self.original_image.scale(w, h)
             self.original_image.pixels.foreach_set(result.ravel())
             self.original_image.update()
         except Exception as e:
-            print(f"裁切应用失败: {e}")
+            print(f"[自由裁切] 应用失败: {e}")
         finally:
             self.cleanup()
 
@@ -488,6 +491,3 @@ class IMAGE_OT_free_crop_modal(WarpModalBase):
             engine.reset_transform()
             return True
         return False
-
-
-        return {'FINISHED'}

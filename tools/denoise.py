@@ -11,6 +11,13 @@ class DenoiseTool(BaseTool):
     @staticmethod
     def get_properties():
         return {
+            'denoise_engine': bpy.props.EnumProperty(
+                name="引擎",
+                description="GPU 着色器(快) 或 CPU numpy",
+                items=[('GPU', "GPU", "GPU 着色器"), ('CPU', "CPU", "numpy")],
+                default='GPU',
+                update=_on_param_update,
+            ),
             'denoise_strength': bpy.props.FloatProperty(
                 name="强度",
                 description="降噪强度",
@@ -36,6 +43,8 @@ class DenoiseTool(BaseTool):
 
     @staticmethod
     def draw_panel(layout, props):
+        layout.prop(props, "denoise_engine")
+        layout.separator()
         layout.prop(props, "denoise_strength", text="强度", slider=True)
         layout.prop(props, "denoise_detail", text="保留细节", slider=True)
 
@@ -50,7 +59,15 @@ class DenoiseTool(BaseTool):
         sigma = strength * 0.8
         alpha = np_array[:, :, 3]
         rgb = np_array[:, :, :3]
-        blurred = np_gaussian_filter(rgb, sigma)
+        if getattr(props, 'denoise_engine', 'GPU') == 'GPU':
+            try:
+                from ..utils.gpu_img_utils import gpu_gaussian_npimg
+                blurred = gpu_gaussian_npimg(np_array, sigma, 'edge')[:, :, :3]
+            except Exception as e:
+                print(f"[减少杂色] GPU 失败，回退 CPU: {e}")
+                blurred = np_gaussian_filter(rgb, sigma)
+        else:
+            blurred = np_gaussian_filter(rgb, sigma)
 
         detail = props.denoise_detail / 100.0
         if detail > 0.0:
