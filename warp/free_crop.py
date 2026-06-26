@@ -443,7 +443,8 @@ class CropEngine(BaseEngine):
             full_np = blimg_2_npimg(self.original_image)
             result = CropTool.process(full_np, self.crop_rect, self.rotation, self.padding_mode)
             new_name = self.original_image.name + "_cropped"
-            npimg_2_blimg(result, new_name, True)
+            new_img = npimg_2_blimg(result, new_name, False)
+            bpy.context.space_data.image = new_img
             bpy.ops.ed.undo_push(message="自由裁切另存")
         except Exception as e:
             print(f"[自由裁切] 另存失败: {e}")

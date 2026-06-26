@@ -63,30 +63,26 @@ def blimg_2_npimg(blender_image: bpy.types.Image) -> np.ndarray:
     return pixel_flat.reshape((img_h, img_w, 4))
 
 
-def npimg_2_blimg(
-    np_image: np.ndarray,
-    image_name: str,
-    overwrite: bool = True,
-    pack: bool = True,
-) -> bpy.types.Image:
-    """将 numpy RGBA 数组 (H, W, 4) 写入 Blender Image 对象。
-    同尺寸时复用已有图像块（foreach_set 原地更新），避免频繁新建数据块。"""
+def npimg_2_blimg(np_image: np.ndarray, image_name: str, overwrite: bool = True, pack: bool = True,) -> bpy.types.Image: 
+    # 校验
     if np_image.dtype != np.float32:
         np_image = np_image.astype(np.float32)
     if np_image.shape[-1] != 4:
         raise ValueError(f"仅支持RGBA四通道！当前通道数：{np_image.shape[-1]}（要求：4）")
     h, w = np_image.shape[:2]
     np_image = np.clip(np_image, 0.0, 1.0)
-    if image_name in bpy.data.images:
+    
+    if (image_name in bpy.data.images) and overwrite:
+        # 如果已经存在且开启覆写
         bl_image = bpy.data.images[image_name]
-        if bl_image.size[0] == w and bl_image.size[1] == h:
-            bl_image.pixels.foreach_set(np_image.ravel())
-            bl_image.update()
-            return bl_image
-        bl_image.user_clear()
-        bpy.data.images.remove(bl_image)
-    bl_image = bpy.data.images.new(name=image_name, width=w, height=h, alpha=True)
-    bl_image.pixels.foreach_set(np_image.ravel())
+        # 仅尺寸不同才需要resize
+        if bl_image.size[0] != w or bl_image.size[1] != h:
+            bl_image.scale(w, h)
+    else:
+        #如果不存在或者没开启覆写则新建，（新建会自动避让旧名称无需额外处理）
+        bl_image = bpy.data.images.new(name=image_name, width=w, height=h, alpha=True)
+    
+    bl_image.pixels.foreach_set(np_image.ravel()) # 高效批量写入
     bl_image.update()
     if pack:
         bl_image.pack()
@@ -586,7 +582,7 @@ def np_height_to_normal(
     nz /= norm
 
     if invert:
-        nx = -nx
+        ny = -ny
 
     # [-1,1] → [0,1] 映射到法线贴图颜色空间
     normal_r = ((nx + 1.0) * 0.5).clip(0.0, 1.0)

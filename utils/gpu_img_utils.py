@@ -1193,7 +1193,7 @@ def _get_height_to_normal_shader():
             float nz = 1.0;
             float nrm = sqrt(nx*nx + ny*ny + nz*nz);
             nx /= nrm; ny /= nrm; nz /= nrm;
-            if (invert == 1) nx = -nx;
+            if (invert == 1) ny = -ny;
             fragColor = vec4((nx+1.0)*0.5, (ny+1.0)*0.5, (nz+1.0)*0.5, 1.0);
         }
     """

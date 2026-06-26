@@ -219,7 +219,7 @@ class PreviewEngine(BaseEngine):
             if result is None:
                 result = self.tool.process(full_np, props)
             new_name = self.original_image.name + "_" + self.tool.tool_id
-            new_img = npimg_2_blimg(result, new_name, True)
+            new_img = npimg_2_blimg(result, new_name, False)
             bpy.context.space_data.image = new_img
         except Exception as e:
             self._report_error(f"另存失败: {e}")

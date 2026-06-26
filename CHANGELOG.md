@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.8] - 2026-06-26
+
+### Fixed
+- **法线生成**：「反转绿色通道」实际翻转了 R 通道（`nx = -nx`），现已修正为翻转 G 通道（`ny = -ny`），CPU/GPU 双引擎同步修复
+- **另存**：所有工具的"另存"会静默覆盖已有的同名图像，现已改为自动追加 `.001`、`.002` 等后缀避免数据丢失
+- **warp 另存**：贝塞尔扭曲/透视形变/自由裁切/置入图像/置入文字另存后未将活动图像切换到新图像，现已统一（切分图像此前已正确）
+
+### Changed
+- `npimg_2_blimg` 重构：`overwrite=False` 时自动生成唯一名称；`overwrite=True` 时原地 `scale()` 而非删除重建，保留 Image 数据块的材质引用
+- **warp 属性空壳化**：`IMAGEEDITOR_TOOLS_PG_Properties` 不再硬编码 warp 属性，改为各 engine 类通过 `get_properties()` 静态方法声明、注册时动态注入（与 tool 系统同构），`__init__.py` 精简 87 行
+- warp 面板 UI 从 `if/elif` 分支改为委托 `engine_cls.draw_panel()`，与 tool 的 `tool.draw_panel()` 统一
+- warp 属性新增 `update` 回调（`_on_warp_param_update`），支持置入图像/置入文字/切分图像在 modal 期间实时响应属性修改
+
 ## [0.3.7] - 2026-06-22
 
 ### Added

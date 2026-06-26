@@ -403,7 +403,8 @@ class PlaceTextEngine(BaseEngine):
                 self.offset_x, self.offset_y, self.scale, self.rotation,
                 blend_mode=mode, opacity=opacity)
             new_name = self.original_image.name + "_text"
-            npimg_2_blimg(result, new_name, True)
+            new_img = npimg_2_blimg(result, new_name, False)
+            bpy.context.space_data.image = new_img
             bpy.ops.ed.undo_push(message="置入文字另存")
         except Exception as e:
             print(f"[置入文字] 另存失败: {e}")
@@ -432,6 +433,87 @@ class PlaceTextEngine(BaseEngine):
                     pass
                 setattr(self, attr, None)
         super().cleanup()
+
+    def _on_prop_update(self):
+        self._text_params_hash = None
+        self._ensure_text_tex()
+
+    @staticmethod
+    def get_properties():
+        from . import _on_warp_param_update
+        from ..utils.blend_modes import BLEND_MODE_ITEMS
+        return {
+            'place_text_content': bpy.props.StringProperty(
+                name="文字内容", default="文字",
+                description="要置入的文字内容",
+                update=_on_warp_param_update,
+            ),
+            'place_text_font_path': bpy.props.StringProperty(
+                name="字体文件",
+                subtype='FILE_PATH',
+                default="",
+                description="自定义字体文件路径，留空使用默认字体",
+                update=_on_warp_param_update,
+            ),
+            'place_text_font_size': bpy.props.IntProperty(
+                name="字号", default=120, min=10, max=2000,
+                description="文字大小（像素）",
+                update=_on_warp_param_update,
+            ),
+            'place_text_color': bpy.props.FloatVectorProperty(
+                name="文字颜色",
+                subtype='COLOR',
+                size=4,
+                default=(1.0, 1.0, 1.0, 1.0),
+                min=0.0, max=1.0,
+                description="文字颜色 (RGBA)",
+                update=_on_warp_param_update,
+            ),
+            'place_text_letter_spacing': bpy.props.FloatProperty(
+                name="字间距", default=0.0, min=-50.0, max=500.0,
+                description="字符之间的额外间距（像素）",
+                update=_on_warp_param_update,
+            ),
+            'place_text_italic_angle': bpy.props.FloatProperty(
+                name="倾斜角度", default=0.0, min=-45.0, max=45.0,
+                description="文字倾斜角度（度）",
+                update=_on_warp_param_update,
+            ),
+            'place_text_padding': bpy.props.FloatProperty(
+                name="出血", default=0.2, min=0.0, max=5.0,
+                description="基于字高的出血比例，实际出血 = 系数 × 字号",
+                update=_on_warp_param_update,
+            ),
+            'place_text_mode': bpy.props.EnumProperty(
+                name="混合模式",
+                items=BLEND_MODE_ITEMS,
+                default='MIX',
+                update=_on_warp_param_update,
+            ),
+            'place_text_opacity': bpy.props.FloatProperty(
+                name="不透明度", default=1.0, min=0.0, max=1.0,
+                soft_min=0.0, soft_max=1.0, subtype='FACTOR',
+                update=_on_warp_param_update,
+            ),
+        }
+
+    @staticmethod
+    def draw_panel(layout, props):
+        layout.prop(props, "place_text_content", text="文字")
+        layout.prop(props, "place_text_font_path", text="字体")
+        row = layout.row(align=True)
+        row.prop(props, "place_text_font_size", text="字号")
+        row.prop(props, "place_text_color", text="")
+        row = layout.row(align=True)
+        row.prop(props, "place_text_letter_spacing", text="字间距")
+        row.prop(props, "place_text_italic_angle", text="倾斜")
+        layout.prop(props, "place_text_padding", text="出血", slider=True)
+        if props.place_text_content:
+            layout.prop(props, "place_text_mode", text="模式")
+            layout.prop(props, "place_text_opacity", text="不透明度", slider=True)
+        else:
+            layout.label(text="请输入文字内容", icon='INFO')
+        layout.separator()
 
 
 class IMAGE_OT_place_text_modal(WarpModalBase):

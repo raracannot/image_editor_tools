@@ -255,7 +255,8 @@ class MeshWarpEngine(BaseEngine):
                 from ..utils.np_img_utils import np_linear_to_srgb
                 result = np_linear_to_srgb(result)
             new_name = self.original_image.name + "_warped"
-            npimg_2_blimg(result, new_name, True)
+            new_img = npimg_2_blimg(result, new_name, False)
+            bpy.context.space_data.image = new_img
             bpy.ops.ed.undo_push(message="贝塞尔扭曲另存")
         except Exception as e:
             print(f"[贝塞尔扭曲] 另存失败: {e}")

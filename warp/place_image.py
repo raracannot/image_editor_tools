@@ -333,7 +333,8 @@ class PlaceImageEngine(BaseEngine):
                 self.offset_x, self.offset_y, self.scale, self.rotation,
                 blend_mode=mode, opacity=opacity)
             new_name = self.original_image.name + "_placed"
-            npimg_2_blimg(result, new_name, True)
+            new_img = npimg_2_blimg(result, new_name, False)
+            bpy.context.space_data.image = new_img
             bpy.ops.ed.undo_push(message="置入图像另存")
         except Exception as e:
             print(f"[置入图像] 另存失败: {e}")
@@ -350,6 +351,46 @@ class PlaceImageEngine(BaseEngine):
                 setattr(self, attr, None)
         self._fg_raw_ref = None
         super().cleanup()
+
+    def _on_prop_update(self):
+        self._load_fg_image()
+        self._ensure_top_tex()
+
+    @staticmethod
+    def get_properties():
+        from . import _on_warp_param_update
+        from ..utils.blend_modes import BLEND_MODE_ITEMS
+        return {
+            'place_img_fg': bpy.props.PointerProperty(
+                name="前景图", type=bpy.types.Image,
+                description="用于置入叠加的前景图像",
+                update=_on_warp_param_update,
+            ),
+            'place_img_mode': bpy.props.EnumProperty(
+                name="混合模式",
+                items=BLEND_MODE_ITEMS,
+                default='MIX',
+                update=_on_warp_param_update,
+            ),
+            'place_img_opacity': bpy.props.FloatProperty(
+                name="不透明度", default=1.0, min=0.0, max=1.0,
+                soft_min=0.0, soft_max=1.0, subtype='FACTOR',
+                update=_on_warp_param_update,
+            ),
+        }
+
+    @staticmethod
+    def draw_panel(layout, props):
+        row = layout.row(align=True)
+        row.prop(props, "place_img_fg", text="前景图")
+        op = row.operator("image_editor_tools.clipboard_paste_to_prop", text="", icon='PASTEDOWN')
+        op.target_prop = "place_img_fg"
+        if props.place_img_fg is not None:
+            layout.prop(props, "place_img_mode", text="模式")
+            layout.prop(props, "place_img_opacity", text="不透明度", slider=True)
+        else:
+            layout.label(text="请选择一幅前景图", icon='INFO')
+        layout.separator()
 
 
 class IMAGE_OT_place_image_modal(WarpModalBase):

@@ -330,7 +330,8 @@ class PerspectiveEngine(BaseEngine):
                 full_np, self.quad_src, self.quad_tgt, self.padding_mode
             )
             new_name = self.original_image.name + "_warped"
-            npimg_2_blimg(result, new_name, True)
+            new_img = npimg_2_blimg(result, new_name, False)
+            bpy.context.space_data.image = new_img
             bpy.ops.ed.undo_push(message="透视形变另存")
         except Exception as e:
             print(f"[透视形变] 另存失败: {e}")

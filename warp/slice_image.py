@@ -189,7 +189,7 @@ class SliceImageEngine(BaseEngine):
                         continue
                     cell = np_array[y0:y1, x0:x1, :].copy()
                     cell_name = f"{base_name}_{idx:02d}"
-                    new_img = npimg_2_blimg(cell, cell_name, True)
+                    new_img = npimg_2_blimg(cell, cell_name, False)
                     bpy.context.space_data.image = new_img
                     idx += 1
 
@@ -198,6 +198,31 @@ class SliceImageEngine(BaseEngine):
             print(f"[切分图像] 失败: {e}")
         finally:
             self.cleanup()
+
+    def _on_prop_update(self):
+        self._sync_from_props()
+
+    @staticmethod
+    def get_properties():
+        from . import _on_warp_param_update
+        return {
+            'slice_cols': bpy.props.IntProperty(
+                name="纵向分割数", default=2, min=0, max=12,
+                description="纵向分割线数量",
+                update=_on_warp_param_update,
+            ),
+            'slice_rows': bpy.props.IntProperty(
+                name="横向分割数", default=2, min=0, max=12,
+                description="横向分割线数量",
+                update=_on_warp_param_update,
+            ),
+        }
+
+    @staticmethod
+    def draw_panel(layout, props):
+        layout.prop(props, "slice_cols", text="纵向")
+        layout.prop(props, "slice_rows", text="横向")
+        layout.separator()
 
 
 class IMAGE_OT_slice_image_modal(WarpModalBase):

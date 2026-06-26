@@ -10,6 +10,16 @@ from .place_text import IMAGE_OT_place_text_modal, PlaceTextEngine
 from .slice_image import IMAGE_OT_slice_image_modal, SliceImageEngine
 
 
+WARP_ENGINES = {
+    'warp:贝塞尔扭曲': MeshWarpEngine,
+    'warp:透视形变': PerspectiveEngine,
+    'warp:自由裁切': CropEngine,
+    'warp:置入图像': PlaceImageEngine,
+    'warp:置入文字': PlaceTextEngine,
+    'warp:切分图像': SliceImageEngine,
+}
+
+
 def _get_active_engine():
     for engine_cls in BaseEngine.__subclasses__():
         if getattr(engine_cls, '_engine_type', None) == 'warp':
@@ -17,6 +27,12 @@ def _get_active_engine():
             if eng is not None:
                 return eng
     return None
+
+
+def _on_warp_param_update(self, context):
+    eng = _get_active_engine()
+    if eng and hasattr(eng, '_on_prop_update'):
+        eng._on_prop_update()
 
 
 class IMAGE_OT_warp_cancel(bpy.types.Operator):
